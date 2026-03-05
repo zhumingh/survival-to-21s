@@ -1,3 +1,4 @@
+// Written by Ken Zhu (zhumingh@gmail.com) with the power of Claude Code
 const express = require('express');
 const session = require('express-session');
 const bcrypt = require('bcryptjs');

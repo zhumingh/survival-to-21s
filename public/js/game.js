@@ -1,3 +1,5 @@
+// Written by Ken Zhu (zhumingh@gmail.com) with the power of Claude Code
+
 // ===== DOM REFS =====
 const gameArea = document.getElementById('gameArea');
 const player = document.getElementById('player');
