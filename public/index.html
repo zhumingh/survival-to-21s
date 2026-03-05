@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DJM7SC6MTC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-DJM7SC6MTC');
+    </script>
+
+    <title>Dodge Survival Game | KenPlay.Fun</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can in this thrilling mini-game at KenPlay.Fun!">
+    <meta name="keywords" content="dodge survival, reflex game, mini-game, KenPlay.Fun">
+    <link rel="canonical" href="https://kenplay.fun/survival.html">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kenplay.fun/survival.html">
+    <meta property="og:title" content="Dodge Survival Game | KenPlay.Fun">
+    <meta property="og:description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can!">
+    <meta property="og:image" content="https://kenplay.fun/res/share.png">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://kenplay.fun/survival.html">
+    <meta property="twitter:title" content="Dodge Survival Game | KenPlay.Fun">
+    <meta property="twitter:description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can!">
+    <meta property="twitter:image" content="https://kenplay.fun/res/share.png">
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+    <!-- Auth screen (shown first) -->
+    <div id="authScreen">
+        <div id="authBox">
+            <div class="screen-hero">
+                <div class="screen-title">SURVIVAL <span>TO 21s</span></div>
+                <div class="screen-tagline">Dodge &middot; Dash &middot; Survive</div>
+            </div>
+            <div class="screen-divider"></div>
+            <div id="authFormTitle">Sign In</div>
+            <div class="input-group">
+                <input type="text" id="authUsername" placeholder="Username" maxlength="20" autocomplete="username">
+            </div>
+            <div class="input-group">
+                <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
+            </div>
+            <div id="authError"></div>
+            <button id="authSubmit">Sign In</button>
+            <button id="authToggleBtn" class="link-btn">New here? Create an account</button>
+        </div>
+    </div>
+
+    <!-- Leaderboard overlay -->
+    <div id="leaderboardOverlay">
+        <div id="leaderboardBox">
+            <h2>Leaderboard</h2>
+            <div id="leaderboardTabs">
+                <button class="lb-tab active" data-tab="global">Global</button>
+                <button class="lb-tab" data-tab="mine">My Scores</button>
+            </div>
+            <div id="leaderboardContent">Loading...</div>
+            <button id="leaderboardClose">Close</button>
+        </div>
+    </div>
+
+    <!-- Lobby screen (shown after auth) -->
+    <div id="gameInstructions" style="display:none">
+        <div id="lobbyBox">
+            <div class="screen-hero">
+                <div class="screen-title">SURVIVAL <span>TO 21s</span></div>
+                <div class="screen-tagline">Dodge &middot; Dash &middot; Survive</div>
+            </div>
+            <div class="screen-divider"></div>
+            <div id="lobbyWelcome">Welcome back, <strong id="loggedInUsername"></strong></div>
+            <div id="lobbyHints">
+                <span>Arrow keys to move</span>
+                <span class="hint-dot">·</span>
+                <span>Space to dash</span>
+            </div>
+            <button id="startButton">&#9654;&nbsp; Play</button>
+            <button id="leaderboardBtn" class="btn-secondary">Leaderboard</button>
+            <button id="logoutBtn" class="link-btn">Sign out</button>
+        </div>
+    </div>
+
+    <!-- Background music -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="music/bg.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Game area -->
+    <div id="gameArea">
+        <div id="player" class="player"></div>
+        <div id="score">Progress: 0s000</div>
+        <div id="highScore">Best: 0s</div>
+        <div id="currentUserDisplay"></div>
+        <div id="muteBtn" title="Toggle music">♪</div>
+        <div id="backToIndex">Back to Index</div>
+        <div id="dashBar"><div id="dashIndicator"></div></div>
+    </div>
+
+    <script src="js/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-DJM7SC6MTC"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-DJM7SC6MTC');
+</script>
+
+    
+
+    <title>Dodge Survival Game | KenPlay.Fun</title>
+    <meta name="description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can in this thrilling mini-game at KenPlay.Fun!">
+    <meta name="keywords" content="dodge survival, reflex game, mini-game, KenPlay.Fun">
+    <link rel="canonical" href="https://kenplay.fun/survival.html">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://kenplay.fun/survival.html">
+    <meta property="og:title" content="Dodge Survival Game | KenPlay.Fun">
+    <meta property="og:description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can!">
+    <meta property="og:image" content="https://kenplay.fun/res/share.png">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://kenplay.fun/survival.html">
+    <meta property="twitter:title" content="Dodge Survival Game | KenPlay.Fun">
+    <meta property="twitter:description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can!">
+    <meta property="twitter:image" content="https://kenplay.fun/res/share.png">
+
+    <style>
+        #gameTitle {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            color: #fff;
+            font-size: 24px;
+            font-weight: bold;
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 5px 0;
+        }
+        #gameInstructions {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            z-index: 1000;
+            max-width: 80%;
+        }
+        #startButton {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Escape Game</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+            font-family: Arial, sans-serif;
+        }
+        #gameArea {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #171717;
+            overflow: hidden;
+        }
+        .player, .enemy {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+        }
+        .player {
+            background-color: #00ff00; /* Bright green */
+        }
+        .enemy {
+            border-radius: 50%; /* Makes the enemy circular */
+            background-color: #f00;
+        }
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <style>
+        body {
+            background: linear-gradient(135deg, #87CEEB, #E0F7FA, #B2EBF2);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+        }
+
+        @keyframes gradientAnimation {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+    </style>
+    <div id="gameInstructions">
+        <h2>Game Instructions</h2>
+        <p>Use the arrow keys (up, down, left, right), individually or in combination, to control the survivor and escape from all the dark forces of society.</p>
+        <p>At 10 seconds, 20 seconds, and 30 seconds, one or more suddenly accelerating enemies will attack.</p>
+        <p>Survive as long as possible to achieve a high score!</p>
+        <button id="startButton">Start Game</button>
+    </div>
+    <div id="gameArea">
+        <div id="player" class="player"></div>
+        <div id="score">Score: 0</div>
+    <div id="backToIndex" style="position: absolute; top: 10px; right: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.5); cursor: pointer;">
+        Back to Index
+    </div>
+    <script>
+        document.getElementById('backToIndex').addEventListener('click', function() {
+            if (confirm('Are you sure you want to leave the game?')) {
+                window.location.href = 'index.html';
+            }
+        });
+    </script>
+    </div>
+
+    <script>
+        const gameArea = document.getElementById('gameArea');
+        const player = document.getElementById('player');
+        const scoreDisplay = document.getElementById('score');
+        let score = 0;
+        let enemies = [];
+        let gameInterval;
+        let enemyInterval;
+        let helperInterval; // 新增变量，用于存储助手生成的定时器
+        const MAX_ENEMIES = 200; // 设置最大敌人数量
+
+        // Set initial player position
+        let playerPos = {
+            x: Math.floor(gameArea.clientWidth / 2 - player.clientWidth / 2),
+            y: Math.floor(gameArea.clientHeight / 2 - player.clientHeight / 2)
+        };
+        player.style.left = `${playerPos.x}px`;
+        player.style.top = `${playerPos.y}px`;
+
+        // Object to track key states
+        let keys = {
+            ArrowUp: false,
+            ArrowDown: false,
+            ArrowLeft: false,
+            ArrowRight: false
+        };
+
+        // Add touch event variables
+        let touchStartX = 0;
+        let touchStartY = 0;
+
+        // Listen for keydown and keyup events
+        document.addEventListener('keydown', (event) => {
+            if (event.key in keys) {
+                keys[event.key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            if (event.key in keys) {
+                keys[event.key] = false;
+            }
+        });
+
+        // Add touch event listeners
+        gameArea.addEventListener('touchstart', handleTouchStart, false);
+        gameArea.addEventListener('touchmove', handleTouchMove, false);
+        gameArea.addEventListener('touchend', handleTouchEnd, false);
+
+        // Touch event handlers
+        function handleTouchStart(evt) {
+            const firstTouch = evt.touches[0];
+            touchStartX = firstTouch.clientX;
+            touchStartY = firstTouch.clientY;
+        }
+
+        function handleTouchMove(evt) {
+            if (!touchStartX || !touchStartY) {
+                return;
+            }
+
+            const touchEndX = evt.touches[0].clientX;
+            const touchEndY = evt.touches[0].clientY;
+
+            const dx = touchEndX - touchStartX;
+            const dy = touchEndY - touchStartY;
+
+            // Calculate angle of swipe
+            const angle = Math.atan2(dy, dx);
+
+            // Convert angle to degrees and normalize to 0-360
+            const degrees = (angle * 180 / Math.PI + 360) % 360;
+
+            // Determine direction based on angle
+            if (degrees >= 337.5 || degrees < 22.5) {
+                keys.ArrowRight = true;
+            } else if (degrees >= 22.5 && degrees < 67.5) {
+                keys.ArrowRight = true;
+                keys.ArrowDown = true;
+            } else if (degrees >= 67.5 && degrees < 112.5) {
+                keys.ArrowDown = true;
+            } else if (degrees >= 112.5 && degrees < 157.5) {
+                keys.ArrowDown = true;
+                keys.ArrowLeft = true;
+            } else if (degrees >= 157.5 && degrees < 202.5) {
+                keys.ArrowLeft = true;
+            } else if (degrees >= 202.5 && degrees < 247.5) {
+                keys.ArrowLeft = true;
+                keys.ArrowUp = true;
+            } else if (degrees >= 247.5 && degrees < 292.5) {
+                keys.ArrowUp = true;
+            } else if (degrees >= 292.5 && degrees < 337.5) {
+                keys.ArrowUp = true;
+                keys.ArrowRight = true;
+            }
+
+            // Prevent default behavior to avoid scrolling
+            evt.preventDefault();
+        }
+
+        function handleTouchEnd() {
+            // Reset all keys when touch ends
+            keys.ArrowUp = false;
+            keys.ArrowDown = false;
+            keys.ArrowLeft = false;
+            keys.ArrowRight = false;
+
+            touchStartX = 0;
+            touchStartY = 0;
+        }
+
+        // Array to store player positions
+        let playerPath = [];
+
+        // Function to move player
+        function movePlayer() {
+            const step = 10;
+            let dx = 0;
+            let dy = 0;
+
+            if (keys.ArrowUp) dy -= step;
+            if (keys.ArrowDown) dy += step;
+            if (keys.ArrowLeft) dx -= step;
+            if (keys.ArrowRight) dx += step;
+
+            // Normalize diagonal movement
+            if (dx !== 0 && dy !== 0) {
+                dx /= Math.sqrt(2);
+                dy /= Math.sqrt(2);
+            }
+
+            playerPos.x = Math.max(0, Math.min(gameArea.clientWidth - player.clientWidth, playerPos.x + dx));
+            playerPos.y = Math.max(0, Math.min(gameArea.clientHeight - player.clientHeight, playerPos.y + dy));
+
+            player.style.left = `${playerPos.x}px`;
+            player.style.top = `${playerPos.y}px`;
+
+            // Record player position
+            playerPath.push({ x: playerPos.x, y: playerPos.y });
+        }
+
+        // Create randomly moving enemies
+        function createEnemy() {
+            if (enemies.length >= MAX_ENEMIES) {
+                return; // 如果敌人数量达到最大值，不再创建新敌人
+            }
+            const enemy = document.createElement('div');
+            enemy.classList.add('enemy');
+            const colors = ['#ff0000', '#800080', '#0000ff']; // Red, Purple, Blue
+            const randomNumber = Math.random();
+            const randomColor = randomNumber < 0.8 ? colors[0] : (randomNumber < 0.95 ? colors[1] : colors[2]);
+            enemy.style.backgroundColor = randomColor;
+            // Calculate the center of the game area
+            const centerX = gameArea.clientWidth / 2;
+            const centerY = gameArea.clientHeight / 2;
+            
+            // Generate a random angle
+            const angle = Math.random() * 2 * Math.PI;
+            
+            // Calculate a distance that's at least 1/4 of the game area's width or height, whichever is larger
+            const minDistance = Math.max(gameArea.clientWidth, gameArea.clientHeight) / 4;
+            const distance = minDistance + Math.random() * minDistance; // This ensures the enemy is between 1/4 and 1/2 of the max dimension away
+            
+            // Calculate the enemy's position
+            const enemyX = centerX + Math.cos(angle) * distance;
+            const enemyY = centerY + Math.sin(angle) * distance;
+            
+            // Set the enemy's position, ensuring it's within the game area
+            enemy.style.left = `${Math.max(0, Math.min(gameArea.clientWidth - 10, enemyX))}px`;
+            enemy.style.top = `${Math.max(0, Math.min(gameArea.clientHeight - 10, enemyY))}px`;
+            const enemySize = Math.random();
+            let size;
+            if (enemySize < 0.8) {
+                size = 10;
+            } else if (enemySize < 0.9) {
+                size = 20;
+            } else {
+                size = 30;
+            }
+            
+            enemy.style.width = `${size}px`;
+            enemy.style.height = `${size}px`;
+            gameArea.appendChild(enemy);
+            enemies.push({ 
+                element: enemy, 
+                xSpeed: (Math.random() - 0.5) * 6, // 增加速度范围
+                ySpeed: (Math.random() - 0.5) * 6  // 增加速度范围
+            });
+        }
+
+        // Update enemy positions
+        function updateEnemies() {
+            const playerRect = player.getBoundingClientRect();
+            const currentScore = parseInt(scoreDisplay.textContent.split(':')[1].trim().split('s')[0]);
+            let fastEnemies = [];
+
+            if (currentScore >= 10) {
+                fastEnemies = enemies.slice(0, 2);
+            }
+            if (currentScore >= 20) {
+                fastEnemies = enemies.slice(0, 4);
+            }
+            if (currentScore >= 30) {
+                fastEnemies = enemies.slice(0, 6);
+            }
+
+            enemies = enemies.filter((enemyObj, index) => {
+                const enemy = enemyObj.element;
+                const enemyRect = enemy.getBoundingClientRect();
+
+                // 计算敌人与玩家的距离
+                const dx = playerRect.left - enemyRect.left;
+                const dy = playerRect.top - enemyRect.top;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // 如果敌人距离玩家太远，就移除它
+                if (distance > Math.max(gameArea.clientWidth, gameArea.clientHeight) / 2) {
+                    gameArea.removeChild(enemy);
+                    return false;
+                }
+
+                let enemyLeft = parseFloat(enemy.style.left);
+                let enemyTop = parseFloat(enemy.style.top);
+
+                // 计算朝向玩家的方向
+                let dirX = dx / distance;
+                let dirY = dy / distance;
+
+                // 更新敌人位置，增加随机性
+                let speedMultiplier = fastEnemies.includes(enemyObj) ? 5 : 1;
+                let newLeft = enemyLeft + (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * speedMultiplier;
+                let newTop = enemyTop + (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * speedMultiplier;
+
+                // 边界检查和反弹
+                if (newLeft <= 0 || newLeft >= gameArea.clientWidth - 10) {
+                    enemyObj.xSpeed = -enemyObj.xSpeed;
+                    newLeft = Math.max(0, Math.min(gameArea.clientWidth - 10, newLeft));
+                }
+                if (newTop <= 0 || newTop >= gameArea.clientHeight - 10) {
+                    enemyObj.ySpeed = -enemyObj.ySpeed;
+                    newTop = Math.max(0, Math.min(gameArea.clientHeight - 10, newTop));
+                }
+
+                enemy.style.left = `${newLeft}px`;
+                enemy.style.top = `${newTop}px`;
+
+                // 碰撞检测
+                if (isCollision(playerRect, enemyRect)) {
+                    endGame();
+                }
+
+                return true;
+            });
+        }
+
+        // Collision detection
+        function isCollision(rect1, rect2) {
+            return !(
+                rect1.right < rect2.left ||
+                rect1.left > rect2.right ||
+                rect1.bottom < rect2.top ||
+                rect1.top > rect2.bottom
+            );
+        }
+
+        function createHelper() {
+            const helper = document.createElement('div');
+            helper.classList.add('helper');
+            helper.style.position = 'absolute';
+            helper.style.width = '20px';
+            helper.style.height = '20px';
+            helper.style.backgroundColor = '#e0e0e0'; // Gray-white color for the helper
+            helper.style.borderRadius = '50%';
+            
+            // Place helper randomly in the game area
+            helper.style.left = `${Math.random() * (gameArea.clientWidth - 20)}px`;
+            helper.style.top = `${Math.random() * (gameArea.clientHeight - 20)}px`;
+            gameArea.appendChild(helper);
+
+            // Randomly select a portion of enemies to move towards the helper
+            const attractedEnemies = enemies.filter(() => Math.random() < 0.3); // 30% chance for each enemy
+
+            attractedEnemies.forEach(enemyObj => {
+                enemyObj.attractedToHelper = true;
+            });
+
+            setTimeout(() => {
+                if (helper.parentNode === gameArea) {
+                    gameArea.removeChild(helper);
+                }
+                // Reset attracted enemies to move towards player
+                attractedEnemies.forEach(enemyObj => {
+                    enemyObj.attractedToHelper = false;
+                });
+            }, 3000); // Helper stays for 3 seconds
+
+            // Update enemy movement logic in the main game loop
+            const updateEnemyMovement = (enemyObj) => {
+                const enemy = enemyObj.element;
+                const enemyRect = enemy.getBoundingClientRect();
+                let targetRect;
+
+                if (enemyObj.attractedToHelper) {
+                    targetRect = helper.getBoundingClientRect();
+                } else {
+                    targetRect = player.getBoundingClientRect();
+                }
+
+                const dx = targetRect.left - enemyRect.left;
+                const dy = targetRect.top - enemyRect.top;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Update enemy position (existing logic)
+                // ...
+
+                return true; // Keep the enemy
+            };
+
+            // Replace the existing enemy update logic with the new updateEnemyMovement function
+            enemies = enemies.filter(updateEnemyMovement);
+        }
+
+        // 将助手生成的定时器放入 startGame 函数中
+        function startHelperInterval() {
+            helperInterval = setInterval(createHelper, 5000); // Create a helper every 5 seconds
+        }
+
+        // Function to draw player path
+        function drawPlayerPath() {
+            const canvas = document.createElement('canvas');
+            canvas.width = gameArea.clientWidth;
+            canvas.height = gameArea.clientHeight;
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.zIndex = '999'; // Ensure it's on top
+            gameArea.appendChild(canvas);
+
+            const ctx = canvas.getContext('2d');
+            ctx.strokeStyle = 'rgba(0, 255, 0, 1)'; // Solid green color with no transparency
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(playerPath[0].x, playerPath[0].y);
+            for (let i = 1; i < playerPath.length - 1; i++) {
+                const cp = {
+                    x: (playerPath[i].x + playerPath[i + 1].x) / 2,
+                    y: (playerPath[i].y + playerPath[i + 1].y) / 2
+                };
+                //ctx.quadraticCurveTo(playerPath[i].x, playerPath[i].y, cp.x, cp.y);
+                ctx.bezierCurveTo(playerPath[i].x, playerPath[i].y, cp.x, cp.y, playerPath[i + 1].x, playerPath[i + 1].y);
+            }
+            ctx.lineTo(playerPath[playerPath.length - 1].x, playerPath[playerPath.length - 1].y);
+            ctx.stroke();
+        }
+
+        // End game
+        function endGame() {
+            clearInterval(gameInterval);
+            clearInterval(enemyInterval);
+            clearInterval(helperInterval);
+
+            let finalScore = scoreDisplay.textContent.split(': ')[1];
+
+            // Create a semi-transparent overlay
+            const overlay = document.createElement('div');
+            overlay.style.position = 'absolute';
+            overlay.style.top = '0';
+            overlay.style.left = '0';
+            overlay.style.width = '100%';
+            overlay.style.height = '100%';
+            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+            overlay.style.zIndex = '1000';
+            document.body.appendChild(overlay);
+
+            // Create a container for game over content
+            const gameOverContainer = document.createElement('div');
+            gameOverContainer.style.position = 'absolute';
+            gameOverContainer.style.top = '50%';
+            gameOverContainer.style.left = '50%';
+            gameOverContainer.style.transform = 'translate(-50%, -50%)';
+            gameOverContainer.style.textAlign = 'center';
+            gameOverContainer.style.zIndex = '1001';
+            gameOverContainer.style.width = '80%';
+            gameOverContainer.style.maxWidth = '400px';
+
+            // Draw player path
+            drawPlayerPath();
+            // Game over message
+            const gameOverMessage = document.createElement('div');
+            gameOverMessage.textContent = 'Game Over!';
+            gameOverMessage.style.color = '#FF4136';
+            gameOverMessage.style.fontSize = '36px';
+            gameOverMessage.style.fontWeight = 'bold';
+            gameOverMessage.style.marginBottom = '20px';
+            gameOverContainer.appendChild(gameOverMessage);
+
+            // Score display
+            const scoreMessage = document.createElement('div');
+            scoreMessage.textContent = `Your score: ${finalScore}`;
+            scoreMessage.style.color = '#FFFFFF';
+            scoreMessage.style.fontSize = '24px';
+            scoreMessage.style.marginBottom = '15px';
+            gameOverContainer.appendChild(scoreMessage);
+
+            // Steps display
+            const stepsMessage = document.createElement('div');
+            stepsMessage.textContent = `Total steps: ${playerPath.length}`;
+            stepsMessage.style.color = '#FFFFFF';
+            stepsMessage.style.fontSize = '24px';
+            stepsMessage.style.marginBottom = '30px';
+            gameOverContainer.appendChild(stepsMessage);
+
+            document.body.appendChild(gameOverContainer);
+
+            
+
+            // Remove existing enemies
+            enemies.forEach(enemyObj => {
+                if (enemyObj.element.parentNode === gameArea) {
+                    gameArea.removeChild(enemyObj.element);
+                }
+            });
+            enemies = [];
+
+            // Remove existing helpers
+            const helpers = gameArea.querySelectorAll('.helper');
+            helpers.forEach(helper => {
+                if (helper.parentNode === gameArea) {
+                    gameArea.removeChild(helper);
+                }
+            });
+
+            setTimeout(() => {
+                const restartMessage = document.createElement('div');
+                restartMessage.textContent = 'Press any key or tap to restart';
+                restartMessage.style.color = '#7FDBFF';
+                restartMessage.style.fontSize = '18px';
+                restartMessage.style.cursor = 'pointer';
+                gameOverContainer.appendChild(restartMessage);
+
+                function restartGame() {
+                    document.body.removeChild(overlay);
+                    document.body.removeChild(gameOverContainer);
+                    document.removeEventListener('keydown', restartGame);
+                    document.removeEventListener('touchstart', restartGame);
+                    startGame();
+                }
+
+                document.addEventListener('keydown', restartGame);
+                document.addEventListener('touchstart', restartGame);
+            }, 2000);
+
+            // Add a subtle animation to the game over container
+            let opacity = 0;
+            const fadeIn = setInterval(() => {
+                opacity += 0.1;
+                gameOverContainer.style.opacity = opacity;
+                if (opacity >= 1) clearInterval(fadeIn);
+            }, 50);
+        }
+
+        // Game loop
+        function startGame() {
+            // Clear the previously drawn player path
+            const existingCanvas = gameArea.querySelector('canvas');
+            if (existingCanvas) {
+                gameArea.removeChild(existingCanvas);
+            }
+            // Reset player position to the center
+            player.style.left = '50%';
+            player.style.top = '50%';
+            player.style.transform = 'translate(-50%, -50%)';
+
+            // Reset player's internal position
+            playerPos = {
+                x: gameArea.clientWidth / 2 - player.clientWidth / 2,
+                y: gameArea.clientHeight / 2 - player.clientHeight / 2
+            };
+
+            // Reset player position
+            player.style.left = `${playerPos.x}px`;
+            player.style.top = `${playerPos.y}px`;
+
+            // Reset player path
+            playerPath = [{ x: playerPos.x, y: playerPos.y }];
+
+            // Reset score display
+            score = 0;
+            enemies = [];
+
+            // Create initial enemies
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const enemyCount = isMobile ? 10 : 40;
+            for (let i = 0; i < enemyCount; i++) {
+                createEnemy();
+            }
+
+            let startTime = Date.now();
+            gameInterval = setInterval(() => {
+                let currentTime = Date.now();
+                let elapsedTime = currentTime - startTime;
+                let seconds = Math.floor(elapsedTime / 1000);
+                let milliseconds = elapsedTime % 1000;
+                scoreDisplay.textContent = `Progress: ${seconds}s${milliseconds.toString().padStart(3, '0')}`;
+                movePlayer();
+                updateEnemies();
+            }, 50);
+
+            // Generate new enemies at intervals
+            enemyInterval = setInterval(createEnemy, 100); // 降低敌人生成频率
+
+            // 启动助手生成的定时器
+            startHelperInterval();
+        }
+
+        const gameInstructions = document.getElementById('gameInstructions');
+        const startButton = document.getElementById('startButton');
+        let gameStarted = false;
+
+        startButton.addEventListener('click', () => {
+            gameInstructions.style.display = 'none';
+            gameStarted = true;
+            startGame();
+        });
+    </script>
+
+<!-- <audio id="backgroundMusic" loop>
+    <source src="ken-games-bgmusic-01.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+</audio> -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var backgroundMusic = document.getElementById('backgroundMusic');
+        if (backgroundMusic) {
+            backgroundMusic.volume = 0.5;
+            backgroundMusic.play().catch(function(error) {
+                console.log('Autoplay failed:', error);
+            });
+        }
+    });
+</script>
+
+ 
+</body>
+</html>

@@ -1,0 +1,493 @@
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background: linear-gradient(135deg, #87CEEB, #E0F7FA, #B2EBF2);
+    background-size: 400% 400%;
+    animation: gradientAnimation 15s ease infinite;
+    font-family: Arial, sans-serif;
+}
+
+@keyframes gradientAnimation {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* ===== LOBBY SCREEN ===== */
+#gameInstructions {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1800;
+    /* Same background as auth screen */
+    background-color: #06060f;
+    background-image:
+        radial-gradient(ellipse at 50% 38%, rgba(0, 210, 80, 0.13) 0%, transparent 58%),
+        linear-gradient(rgba(0, 255, 90, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 90, 0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 48px 48px, 48px 48px;
+}
+
+#lobbyBox {
+    background: rgba(10, 12, 18, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    width: 340px;
+    padding: 36px 32px 28px;
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    animation: authSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both,
+               cardBorderPulse 4s ease-in-out 0.5s infinite;
+}
+
+/* Shared hero block (auth + lobby) */
+.screen-hero { margin-bottom: 24px; }
+
+.screen-title {
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    color: #ffffff;
+    text-transform: uppercase;
+    animation: titleGlow 3s ease-in-out infinite;
+}
+.screen-title span { color: #00e664; }
+
+.screen-tagline {
+    margin-top: 6px;
+    font-size: 12px;
+    letter-spacing: 3px;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+}
+
+.screen-divider {
+    height: 1px;
+    background: linear-gradient(to right, transparent, rgba(0, 220, 90, 0.35), transparent);
+    margin-bottom: 22px;
+}
+
+/* Lobby content */
+#lobbyWelcome {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.75);
+    margin-bottom: 8px;
+}
+#lobbyWelcome strong { color: #00e664; }
+
+#lobbyHints {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.3);
+    letter-spacing: 0.5px;
+    margin-bottom: 28px;
+}
+.hint-dot { margin: 0 8px; }
+
+/* Play button */
+#startButton {
+    display: block;
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #1db954, #00c853);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    cursor: pointer;
+    margin-bottom: 12px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(0, 200, 80, 0.35);
+}
+#startButton:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 28px rgba(0, 200, 80, 0.5);
+}
+
+#gameArea {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #171717;
+    overflow: hidden;
+}
+
+.player, .enemy {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+}
+
+.player {
+    background-color: #00ff00;
+}
+
+.enemy {
+    border-radius: 50%;
+    background-color: #f00;
+}
+
+#score {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    color: #fff;
+    font-size: 16px;
+}
+
+#highScore {
+    position: absolute;
+    top: 30px;
+    left: 10px;
+    color: #ffd700;
+    font-size: 14px;
+}
+
+#muteBtn {
+    position: absolute;
+    top: 10px;
+    right: 80px;
+    font-size: 16px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.2s;
+}
+#muteBtn:hover { color: rgba(255, 255, 255, 0.9); }
+#muteBtn.muted  { color: rgba(255, 255, 255, 0.2); }
+
+#backToIndex {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+}
+
+#dashBar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 120px;
+    height: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#dashIndicator {
+    width: 100%;
+    height: 100%;
+    background-color: #00ffff;
+    border-radius: 3px;
+    transition: width 0.05s linear;
+}
+
+.player.dashing {
+    box-shadow: 0 0 14px 5px #00ffff;
+    background-color: #00ffff;
+}
+
+.player.near-miss {
+    box-shadow: 0 0 10px 4px #ffff00;
+    background-color: #ffff00;
+}
+
+/* ===== AUTH SCREEN ===== */
+@keyframes authBgPulse {
+    0%, 100% { opacity: 0.7; }
+    50%       { opacity: 1;   }
+}
+@keyframes authSlideUp {
+    from { opacity: 0; transform: translateY(28px); }
+    to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes titleGlow {
+    0%, 100% { text-shadow: 0 0 18px rgba(0,255,100,0.5), 0 0 40px rgba(0,255,100,0.25); }
+    50%       { text-shadow: 0 0 28px rgba(0,255,100,0.9), 0 0 60px rgba(0,255,100,0.45); }
+}
+@keyframes cardBorderPulse {
+    0%, 100% { box-shadow: 0 0 0 1px rgba(0,220,90,0.25), 0 24px 60px rgba(0,0,0,0.6); }
+    50%       { box-shadow: 0 0 0 1px rgba(0,220,90,0.55), 0 24px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,200,80,0.08); }
+}
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#authScreen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    overflow: hidden;
+    /* Dark game background with grid + radial glow */
+    background-color: #06060f;
+    background-image:
+        radial-gradient(ellipse at 50% 38%, rgba(0, 210, 80, 0.13) 0%, transparent 58%),
+        linear-gradient(rgba(0, 255, 90, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 255, 90, 0.035) 1px, transparent 1px);
+    background-size: 100% 100%, 48px 48px, 48px 48px;
+    animation: authBgPulse 6s ease-in-out infinite;
+}
+
+#authBox {
+    background: rgba(10, 12, 18, 0.92);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 16px;
+    width: 340px;
+    padding: 36px 32px 28px;
+    text-align: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    animation: authSlideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both,
+               cardBorderPulse 4s ease-in-out 0.5s infinite;
+}
+
+/* Auth hero uses shared .screen-hero classes */
+
+/* Form mode label */
+#authFormTitle {
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 16px;
+}
+
+/* Inputs */
+.input-group {
+    margin-bottom: 12px;
+}
+
+.input-group input {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #fff;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.input-group input:focus {
+    border-color: rgba(0, 220, 90, 0.65);
+    background: rgba(0, 220, 90, 0.06);
+}
+
+.input-group input::placeholder {
+    color: rgba(255, 255, 255, 0.28);
+}
+
+/* Error */
+#authError {
+    color: #ff5447;
+    font-size: 12.5px;
+    min-height: 16px;
+    margin-bottom: 10px;
+    text-align: left;
+    padding-left: 2px;
+}
+
+/* Submit button */
+#authSubmit {
+    position: relative;
+    width: 100%;
+    padding: 12px;
+    background: linear-gradient(135deg, #1db954, #00c853);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: transform 0.15s, box-shadow 0.15s, background 0.2s;
+    box-shadow: 0 4px 18px rgba(0, 200, 80, 0.3);
+}
+
+#authSubmit:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(0, 200, 80, 0.45);
+}
+
+#authSubmit:active:not(:disabled) {
+    transform: translateY(0);
+}
+
+#authSubmit:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Loading spinner on button */
+#authSubmit.loading { color: transparent; }
+#authSubmit.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%; left: 50%;
+    width: 16px; height: 16px;
+    margin: -8px 0 0 -8px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+.link-btn {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.38);
+    font-size: 13px;
+    cursor: pointer;
+    padding: 4px 0;
+    transition: color 0.15s;
+}
+
+.link-btn:hover {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.btn-secondary {
+    display: block;
+    width: 100%;
+    padding: 11px;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.07);
+    color: rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    cursor: pointer;
+    margin-bottom: 14px;
+    transition: background 0.15s, color 0.15s;
+}
+.btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.13);
+    color: #fff;
+}
+
+/* ===== IN-GAME HUD ===== */
+#currentUserDisplay {
+    position: absolute;
+    top: 30px;
+    right: 10px;
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
+/* ===== LEADERBOARD OVERLAY ===== */
+#leaderboardOverlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.88);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1500;
+}
+
+#leaderboardBox {
+    background: rgba(18, 18, 18, 0.98);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 24px;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    text-align: center;
+    color: white;
+}
+
+#leaderboardBox h2 {
+    margin: 0 0 16px;
+}
+
+#leaderboardTabs {
+    margin-bottom: 16px;
+}
+
+.lb-tab {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.55);
+    padding: 6px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    margin: 0 4px;
+}
+
+.lb-tab.active {
+    background: #4CAF50;
+    border-color: #4CAF50;
+    color: white;
+}
+
+#leaderboardContent {
+    min-height: 60px;
+    text-align: left;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.lb-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.lb-table th {
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: normal;
+    padding: 6px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: left;
+}
+
+.lb-table td {
+    padding: 9px 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    text-align: left;
+    color: white;
+}
+
+.lb-me td {
+    color: #00ff00 !important;
+    font-weight: bold;
+}
+
+#leaderboardClose {
+    margin-top: 18px;
+    padding: 8px 28px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+#leaderboardClose:hover {
+    background: rgba(255, 255, 255, 0.18);
+}

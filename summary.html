@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    background: #ffffff;
+    color: #1a1a2e;
+    padding: 52px 60px;
+    font-size: 13.5px;
+    line-height: 1.7;
+  }
+
+  /* Header */
+  .header {
+    border-bottom: 3px solid #00c853;
+    padding-bottom: 18px;
+    margin-bottom: 32px;
+  }
+  .header h1 {
+    font-size: 28px;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #0a0a1a;
+  }
+  .header h1 span { color: #00c853; }
+  .header .subtitle {
+    font-size: 12px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #888;
+    margin-top: 5px;
+  }
+
+  /* Section */
+  h2 {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2.5px;
+    color: #00a846;
+    margin: 28px 0 12px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e8f5e9;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 6px;
+    font-size: 13px;
+  }
+  th {
+    background: #f3faf5;
+    color: #444;
+    font-weight: 600;
+    text-align: left;
+    padding: 8px 12px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    border-bottom: 2px solid #c8e6c9;
+  }
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td:first-child { font-weight: 600; color: #1a1a2e; white-space: nowrap; width: 30%; }
+  td:last-child  { color: #444; }
+
+  /* List */
+  ul { padding-left: 18px; margin-bottom: 6px; }
+  ul li { margin-bottom: 4px; color: #444; }
+  ul li strong { color: #1a1a2e; }
+
+  /* Code / tag */
+  code {
+    background: #f0faf4;
+    color: #007a36;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 12px;
+  }
+
+  /* Screen section callout */
+  .screen-block {
+    background: #fafffe;
+    border-left: 3px solid #00c853;
+    padding: 12px 16px;
+    border-radius: 0 8px 8px 0;
+    margin-bottom: 12px;
+  }
+  .screen-block h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #0a0a1a;
+    margin-bottom: 6px;
+  }
+  .screen-block ul { margin: 0; }
+
+  /* API endpoint list */
+  .endpoint { font-family: "SF Mono", Menlo, Consolas, monospace; font-size: 12px; }
+  .method-post { color: #e65100; font-weight: 700; }
+  .method-get  { color: #1565c0; font-weight: 700; }
+
+  /* Footer */
+  .footer {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid #e0e0e0;
+    font-size: 11px;
+    color: #aaa;
+    text-align: center;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>SURVIVAL <span>TO 21s</span> &mdash; Project Improvements Summary</h1>
+  <div class="subtitle">Dodge &middot; Dash &middot; Survive &nbsp;&bull;&nbsp; All changes from original ken_survival.html</div>
+</div>
+
+<!-- 1. Project Setup -->
+<h2>1 &nbsp; Project Setup</h2>
+<p style="color:#444;margin-bottom:8px;">The original single-file <code>ken_survival.html</code> was refactored into a structured multi-file project served by a Node.js backend.</p>
+<table>
+  <tr><th>File</th><th>Purpose</th></tr>
+  <tr><td>server.js</td><td>Express server — auth API, scores API, static file serving</td></tr>
+  <tr><td>public/index.html</td><td>Entry point — auth screen, lobby, leaderboard overlay, game area</td></tr>
+  <tr><td>public/css/style.css</td><td>All styles</td></tr>
+  <tr><td>public/js/game.js</td><td>All frontend logic — auth, leaderboard, full game loop</td></tr>
+  <tr><td>game.db</td><td>SQLite database, auto-created on first run</td></tr>
+  <tr><td>CLAUDE.md</td><td>Architecture guide for future AI-assisted development</td></tr>
+</table>
+
+<!-- 2. Game Improvements -->
+<h2>2 &nbsp; Game Improvements</h2>
+<table>
+  <tr><th>Feature</th><th>Detail</th></tr>
+  <tr><td>Dash ability</td><td>Press <strong>Space</strong> for a 3.5× speed burst (180ms). Cyan glow on player. 2-second cooldown shown as a refilling bar at the bottom center of the screen.</td></tr>
+  <tr><td>Continuous difficulty</td><td>One additional fast enemy (5× speed) unlocked every 5 seconds — replacing the original hard-coded milestones at 10s / 20s / 30s only.</td></tr>
+  <tr><td>Near-miss flash</td><td>Player flashes yellow when any enemy passes within 25px without a collision — gives tactile feedback for close calls.</td></tr>
+  <tr><td>Local high score</td><td>Personal best persists across sessions via <code>localStorage</code>. Displayed in gold on the in-game HUD.</td></tr>
+  <tr><td>gameRunning flag</td><td>Guards <code>endGame()</code> from firing multiple times in one tick when several enemies collide simultaneously.</td></tr>
+  <tr><td>Elapsed time tracking</td><td><code>currentElapsedMs</code> is updated each game tick as a variable — no longer fragily parsed from DOM text content.</td></tr>
+</table>
+
+<!-- 3. Backend -->
+<h2>3 &nbsp; Backend — Node.js + Express + SQLite</h2>
+<p style="color:#444;margin-bottom:10px;">A lightweight REST API handles all user and score data. No ORM — uses <code>better-sqlite3</code> (synchronous) directly.</p>
+
+<table style="margin-bottom:14px;">
+  <tr><th>Database table</th><th>Schema</th></tr>
+  <tr><td>users</td><td><code>id, username COLLATE NOCASE, password_hash, created_at</code></td></tr>
+  <tr><td>scores</td><td><code>id, user_id, score_ms, steps, played_at</code></td></tr>
+</table>
+
+<table>
+  <tr><th>Endpoint</th><th>Description</th></tr>
+  <tr><td><span class="endpoint"><span class="method-post">POST</span> /api/auth/register</span></td><td>Create account. Username 2–20 chars, password min 4 chars, case-insensitive uniqueness check.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-post">POST</span> /api/auth/login</span></td><td>Authenticate and start a session (7-day cookie). Passwords hashed with bcrypt cost 10.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-post">POST</span> /api/auth/logout</span></td><td>Destroy session.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-get">GET</span>&nbsp; /api/auth/me</span></td><td>Returns current session user or <code>null</code>.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-post">POST</span> /api/scores</span></td><td>Submit a score <code>{ scoreMs, steps }</code>. Requires auth.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-get">GET</span>&nbsp; /api/leaderboard</span></td><td>Top 20 players — best score per user, ranked by survival time.</td></tr>
+  <tr><td><span class="endpoint"><span class="method-get">GET</span>&nbsp; /api/scores/me</span></td><td>Current user's last 10 runs, best first. Requires auth.</td></tr>
+</table>
+
+<!-- 4. UI Screens -->
+<h2>4 &nbsp; UI / UX Screens</h2>
+
+<div class="screen-block">
+  <h3>Login Screen</h3>
+  <ul>
+    <li>Full-screen dark background with CSS grid pattern and animated green radial glow</li>
+    <li><strong>"SURVIVAL TO 21s"</strong> title in large bold all-caps — "21s" glows green with a pulsing animation</li>
+    <li>Glassmorphism card with slide-up entry animation and pulsing green border</li>
+    <li>Green gradient submit button with hover lift effect and <strong>loading spinner</strong> during request</li>
+    <li>Inline error messages, Enter-key navigation between fields, toggle between Sign In / Register</li>
+  </ul>
+</div>
+
+<div class="screen-block">
+  <h3>Lobby Screen (after login)</h3>
+  <ul>
+    <li>Full-screen overlay with identical background to login — consistent visual language across all screens</li>
+    <li>Greets user by name in green</li>
+    <li>Single prominent <strong>▶ Play</strong> button as the primary call to action</li>
+    <li>Secondary Leaderboard button and Sign out link</li>
+    <li>Replaces the old floating instruction box that overlapped the game area HUD messily</li>
+  </ul>
+</div>
+
+<div class="screen-block">
+  <h3>Leaderboard Overlay</h3>
+  <ul>
+    <li><strong>Global tab</strong> — top 20 all-time best scores (one per user), current user's row highlighted green</li>
+    <li><strong>My Scores tab</strong> — personal history with time, steps, and date</li>
+    <li>Accessible from the lobby and from the game over screen</li>
+  </ul>
+</div>
+
+<div class="screen-block">
+  <h3>Game Over Screen</h3>
+  <ul>
+    <li>Shows final score, personal best (gold), and step count</li>
+    <li>"Score saved!" confirmation badge when logged in</li>
+    <li>View Leaderboard button</li>
+    <li>Player's full movement path drawn as a smooth bezier curve on canvas</li>
+  </ul>
+</div>
+
+<!-- 5. Run -->
+<h2>5 &nbsp; Running the Project</h2>
+<table>
+  <tr><th>Command</th><th>Action</th></tr>
+  <tr><td><code>npm install</code></td><td>Install dependencies (first time only)</td></tr>
+  <tr><td><code>npm start</code></td><td>Start server at <code>http://localhost:3000</code></td></tr>
+  <tr><td><code>node --watch server.js</code></td><td>Dev mode with auto-restart on file changes</td></tr>
+</table>
+
+<div class="footer">
+  Generated &nbsp;&bull;&nbsp; Survival to 21s &nbsp;&bull;&nbsp; /Users/kenzhu/Desktop/claude-test
+</div>
+
+</body>
+</html>
