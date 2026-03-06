@@ -118,7 +118,9 @@ function showLeaderboard() {
 }
 
 function fmtScore(ms) {
-    return `${Math.floor(ms / 1000)}s${String(ms % 1000).padStart(3, '0')}`;
+    const s  = Math.floor(ms / 1000);
+    const cs = Math.floor((ms % 1000) / 10);
+    return `${s}.${String(cs).padStart(2, '0')}s`;
 }
 
 async function loadLeaderboardTab(tab) {
@@ -174,6 +176,16 @@ let gameInterval;
 let enemyInterval;
 let helperInterval;
 let gameRunning = false;
+
+// Helper (decoy) — stored as coords so attracted enemies can actually chase it
+let helperPos = null;  // { x, y }
+let helperEl  = null;
+
+// Per-run stats
+let closestCall   = Infinity; // min center-to-center px between player and any enemy
+let enemiesDodged = 0;
+let milestoneShown = new Set();
+let milestoneTimer = null;
 let gameStartTime = null;
 let currentElapsedMs = 0;
 let elapsedSeconds = 0;
@@ -200,8 +212,6 @@ player.style.top = `${playerPos.y}px`;
 
 // Keys
 let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
-let touchStartX = 0;
-let touchStartY = 0;
 
 document.addEventListener('keydown', (event) => {
     if (event.key in keys) keys[event.key] = true;
@@ -211,39 +221,25 @@ document.addEventListener('keyup', (event) => {
     if (event.key in keys) keys[event.key] = false;
 });
 
-gameArea.addEventListener('touchstart', handleTouchStart, false);
-gameArea.addEventListener('touchmove', handleTouchMove, false);
-gameArea.addEventListener('touchend', handleTouchEnd, false);
+// Touch: follow-finger (mobile moves toward wherever finger is)
+let touchTarget = null; // { x, y } in gameArea coords
 
-function handleTouchStart(evt) {
-    const t = evt.touches[0];
-    touchStartX = t.clientX;
-    touchStartY = t.clientY;
-}
+gameArea.addEventListener('touchstart', e => {
+    e.preventDefault();
+    const r = gameArea.getBoundingClientRect();
+    const t = e.touches[0];
+    touchTarget = { x: t.clientX - r.left, y: t.clientY - r.top };
+}, { passive: false });
 
-function handleTouchMove(evt) {
-    if (!touchStartX || !touchStartY) return;
-    const dx = evt.touches[0].clientX - touchStartX;
-    const dy = evt.touches[0].clientY - touchStartY;
-    const degrees = (Math.atan2(dy, dx) * 180 / Math.PI + 360) % 360;
+gameArea.addEventListener('touchmove', e => {
+    e.preventDefault();
+    const r = gameArea.getBoundingClientRect();
+    const t = e.touches[0];
+    touchTarget = { x: t.clientX - r.left, y: t.clientY - r.top };
+}, { passive: false });
 
-    keys.ArrowUp = keys.ArrowDown = keys.ArrowLeft = keys.ArrowRight = false;
-    if (degrees >= 337.5 || degrees < 22.5)     keys.ArrowRight = true;
-    else if (degrees < 67.5)                    keys.ArrowRight = keys.ArrowDown = true;
-    else if (degrees < 112.5)                   keys.ArrowDown = true;
-    else if (degrees < 157.5)                   keys.ArrowDown = keys.ArrowLeft = true;
-    else if (degrees < 202.5)                   keys.ArrowLeft = true;
-    else if (degrees < 247.5)                   keys.ArrowLeft = keys.ArrowUp = true;
-    else if (degrees < 292.5)                   keys.ArrowUp = true;
-    else                                        keys.ArrowUp = keys.ArrowRight = true;
-
-    evt.preventDefault();
-}
-
-function handleTouchEnd() {
-    keys.ArrowUp = keys.ArrowDown = keys.ArrowLeft = keys.ArrowRight = false;
-    touchStartX = 0; touchStartY = 0;
-}
+gameArea.addEventListener('touchend',    () => { touchTarget = null; });
+gameArea.addEventListener('touchcancel', () => { touchTarget = null; });
 
 // ===== DASH =====
 function triggerDash() {
@@ -268,11 +264,22 @@ function triggerDash() {
 function movePlayer() {
     const step = isDashing ? 35 : 10;
     let dx = 0, dy = 0;
-    if (keys.ArrowUp)    dy -= step;
-    if (keys.ArrowDown)  dy += step;
-    if (keys.ArrowLeft)  dx -= step;
-    if (keys.ArrowRight) dx += step;
-    if (dx !== 0 && dy !== 0) { dx /= Math.sqrt(2); dy /= Math.sqrt(2); }
+
+    if (touchTarget) {
+        // Follow-finger: move toward touch point
+        const cx  = playerPos.x + 5;
+        const cy  = playerPos.y + 5;
+        const tdx = touchTarget.x - cx;
+        const tdy = touchTarget.y - cy;
+        const d   = Math.sqrt(tdx * tdx + tdy * tdy);
+        if (d > 2) { dx = (tdx / d) * step; dy = (tdy / d) * step; }
+    } else {
+        if (keys.ArrowUp)    dy -= step;
+        if (keys.ArrowDown)  dy += step;
+        if (keys.ArrowLeft)  dx -= step;
+        if (keys.ArrowRight) dx += step;
+        if (dx !== 0 && dy !== 0) { dx /= Math.sqrt(2); dy /= Math.sqrt(2); }
+    }
 
     playerPos.x = Math.max(0, Math.min(gameArea.clientWidth - player.clientWidth, playerPos.x + dx));
     playerPos.y = Math.max(0, Math.min(gameArea.clientHeight - player.clientHeight, playerPos.y + dy));
@@ -293,57 +300,88 @@ function createEnemy() {
 
     const centerX = gameArea.clientWidth / 2;
     const centerY = gameArea.clientHeight / 2;
-    const angle = Math.random() * 2 * Math.PI;
+    const angle   = Math.random() * 2 * Math.PI;
     const minDist = Math.max(gameArea.clientWidth, gameArea.clientHeight) / 4;
-    const dist = minDist + Math.random() * minDist;
+    const dist    = minDist + Math.random() * minDist;
 
-    enemy.style.left = `${Math.max(0, Math.min(gameArea.clientWidth - 10, centerX + Math.cos(angle) * dist))}px`;
-    enemy.style.top  = `${Math.max(0, Math.min(gameArea.clientHeight - 10, centerY + Math.sin(angle) * dist))}px`;
+    const ex = Math.max(0, Math.min(gameArea.clientWidth - 10,  centerX + Math.cos(angle) * dist));
+    const ey = Math.max(0, Math.min(gameArea.clientHeight - 10, centerY + Math.sin(angle) * dist));
+    enemy.style.left = `${ex}px`;
+    enemy.style.top  = `${ey}px`;
 
-    const sz = Math.random();
+    const sz   = Math.random();
     const size = sz < 0.8 ? 10 : sz < 0.9 ? 20 : 30;
-    enemy.style.width = `${size}px`;
+    enemy.style.width  = `${size}px`;
     enemy.style.height = `${size}px`;
 
     gameArea.appendChild(enemy);
-    enemies.push({ element: enemy, xSpeed: (Math.random() - 0.5) * 6, ySpeed: (Math.random() - 0.5) * 6 });
+    enemies.push({ element: enemy, x: ex, y: ey, size, xSpeed: (Math.random() - 0.5) * 6, ySpeed: (Math.random() - 0.5) * 6 });
 }
 
 let nearMissTimeout = null;
+const PLAYER_SIZE   = 10;
 
 function updateEnemies() {
     if (!gameRunning) return;
-    const playerRect = player.getBoundingClientRect();
+    const px      = playerPos.x;
+    const py      = playerPos.y;
+    const maxDim  = Math.max(gameArea.clientWidth, gameArea.clientHeight);
     const fastCount = Math.min(Math.floor(elapsedSeconds / 5), enemies.length);
-    const fastEnemies = enemies.slice(0, fastCount);
-    let nearMiss = false;
+    let nearMiss  = false;
 
-    enemies = enemies.filter((enemyObj) => {
-        const enemy = enemyObj.element;
-        const enemyRect = enemy.getBoundingClientRect();
-        const dx = playerRect.left - enemyRect.left;
-        const dy = playerRect.top - enemyRect.top;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+    enemies = enemies.filter((enemyObj, index) => {
+        // Distance from player using stored positions — no DOM layout reads
+        const cdx = px - enemyObj.x;
+        const cdy = py - enemyObj.y;
+        const cd2 = cdx * cdx + cdy * cdy;
 
-        if (dist > Math.max(gameArea.clientWidth, gameArea.clientHeight) / 2) {
-            gameArea.removeChild(enemy);
+        // Cull if drifted too far
+        if (cd2 > (maxDim / 2) * (maxDim / 2)) {
+            gameArea.removeChild(enemyObj.element);
+            enemiesDodged++;
             return false;
         }
 
-        const dirX = dx / dist;
-        const dirY = dy / dist;
-        const spd = fastEnemies.includes(enemyObj) ? 5 : 1;
-        let newLeft = parseFloat(enemy.style.left) + (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * spd;
-        let newTop  = parseFloat(enemy.style.top)  + (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * spd;
+        const cd = Math.sqrt(cd2);
+        if (cd < closestCall) closestCall = cd;
 
-        if (newLeft <= 0 || newLeft >= gameArea.clientWidth - 10)  { enemyObj.xSpeed = -enemyObj.xSpeed; newLeft = Math.max(0, Math.min(gameArea.clientWidth - 10, newLeft)); }
-        if (newTop  <= 0 || newTop  >= gameArea.clientHeight - 10) { enemyObj.ySpeed = -enemyObj.ySpeed; newTop  = Math.max(0, Math.min(gameArea.clientHeight - 10, newTop)); }
+        // Target: helper decoy if attracted, otherwise player
+        let targetX = px, targetY = py;
+        if (enemyObj.attractedToHelper && helperPos) {
+            targetX = helperPos.x;
+            targetY = helperPos.y;
+        }
 
-        enemy.style.left = `${newLeft}px`;
-        enemy.style.top  = `${newTop}px`;
+        const tdx   = targetX - enemyObj.x;
+        const tdy   = targetY - enemyObj.y;
+        const tdist = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+        const dirX  = tdx / tdist;
+        const dirY  = tdy / tdist;
+        const spd   = index < fastCount ? 5 : 1;
 
-        if (isCollision(playerRect, enemyRect)) { endGame(); return true; }
-        if (dist < 25) nearMiss = true;
+        enemyObj.x += (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * spd;
+        enemyObj.y += (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * spd;
+
+        // Bounce off walls
+        if (enemyObj.x <= 0 || enemyObj.x >= gameArea.clientWidth - enemyObj.size) {
+            enemyObj.xSpeed = -enemyObj.xSpeed;
+            enemyObj.x = Math.max(0, Math.min(gameArea.clientWidth - enemyObj.size, enemyObj.x));
+        }
+        if (enemyObj.y <= 0 || enemyObj.y >= gameArea.clientHeight - enemyObj.size) {
+            enemyObj.ySpeed = -enemyObj.ySpeed;
+            enemyObj.y = Math.max(0, Math.min(gameArea.clientHeight - enemyObj.size, enemyObj.y));
+        }
+
+        enemyObj.element.style.left = `${enemyObj.x}px`;
+        enemyObj.element.style.top  = `${enemyObj.y}px`;
+
+        // AABB collision (skip if dashing — dash is invincible)
+        if (!isDashing && !(px + PLAYER_SIZE < enemyObj.x || px > enemyObj.x + enemyObj.size ||
+                             py + PLAYER_SIZE < enemyObj.y || py > enemyObj.y + enemyObj.size)) {
+            endGame();
+        }
+
+        if (cd < 25) nearMiss = true;
         return true;
     });
 
@@ -354,28 +392,44 @@ function updateEnemies() {
     }
 }
 
-function isCollision(r1, r2) {
-    return !(r1.right < r2.left || r1.left > r2.right || r1.bottom < r2.top || r1.top > r2.bottom);
-}
-
 // ===== HELPER DECOY =====
 function createHelper() {
-    const helper = document.createElement('div');
-    helper.classList.add('helper');
-    Object.assign(helper.style, {
+    // Remove any still-active helper
+    if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
+
+    const hx = Math.random() * (gameArea.clientWidth  - 20);
+    const hy = Math.random() * (gameArea.clientHeight - 20);
+    helperPos = { x: hx, y: hy };
+
+    helperEl = document.createElement('div');
+    helperEl.classList.add('helper');
+    Object.assign(helperEl.style, {
         position: 'absolute', width: '20px', height: '20px',
         backgroundColor: '#e0e0e0', borderRadius: '50%',
-        left: `${Math.random() * (gameArea.clientWidth - 20)}px`,
-        top:  `${Math.random() * (gameArea.clientHeight - 20)}px`
+        boxShadow: '0 0 8px #fff',
+        left: `${hx}px`, top: `${hy}px`
     });
-    gameArea.appendChild(helper);
+    gameArea.appendChild(helperEl);
 
     const attracted = enemies.filter(() => Math.random() < 0.3);
     attracted.forEach(e => { e.attractedToHelper = true; });
+
     setTimeout(() => {
-        if (helper.parentNode === gameArea) gameArea.removeChild(helper);
+        if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
+        helperEl  = null;
+        helperPos = null;
         attracted.forEach(e => { e.attractedToHelper = false; });
     }, 3000);
+}
+
+// ===== MILESTONE FLASH =====
+function showMilestone(text) {
+    const el = document.getElementById('milestone');
+    if (!el) return;
+    clearTimeout(milestoneTimer);
+    el.textContent = text;
+    el.style.opacity = '1';
+    milestoneTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
 }
 
 // ===== PATH DRAWING =====
@@ -407,14 +461,15 @@ function endGame() {
     clearInterval(gameInterval);
     clearInterval(enemyInterval);
     clearInterval(helperInterval);
+    clearTimeout(milestoneTimer);
     pauseMusic();
 
-    const finalMs = currentElapsedMs;
-    const finalSecs = Math.floor(finalMs / 1000);
+    const finalMs   = currentElapsedMs;
+    const finalSecs = finalMs / 1000;
 
     // Update local high score
-    if (finalSecs > highScore) {
-        highScore = finalSecs;
+    if (Math.floor(finalSecs) > highScore) {
+        highScore = Math.floor(finalSecs);
         localStorage.setItem('dodge_highscore', highScore);
         highScoreDisplay.textContent = `Best: ${highScore}s`;
     }
@@ -428,59 +483,125 @@ function endGame() {
         }).catch(console.error);
     }
 
-    // Build game over UI
+    // ── Star rating ──────────────────────────────────────────────────
+    let stars, rank, rankColor;
+    if (finalSecs >= 21)      { stars = 5; rank = 'LEGENDARY';    rankColor = '#FF6EC7'; }
+    else if (finalSecs >= 15) { stars = 4; rank = 'IMPRESSIVE';   rankColor = '#FFD700'; }
+    else if (finalSecs >= 10) { stars = 3; rank = 'NOT BAD';      rankColor = '#00CFFF'; }
+    else if (finalSecs >= 5)  { stars = 2; rank = 'KEEP GOING';   rankColor = '#aaa'; }
+    else                      { stars = 1; rank = 'JUST STARTED'; rankColor = '#777'; }
+
+    // ── Closest-call label ───────────────────────────────────────────
+    const cpx = closestCall === Infinity ? 999 : closestCall;
+    const callLabel = cpx < 15 ? "Hair's breadth!" : cpx < 30 ? 'Close shave!' : cpx < 60 ? 'Careful!' : 'Comfortable';
+    const closestPx = closestCall === Infinity ? '—' : Math.round(closestCall) + 'px';
+
+    // ── Milestone badges ─────────────────────────────────────────────
+    const badgeHTML = [10, 20, 30]
+        .filter(s => milestoneShown.has(s))
+        .map((s, i) => `<span class="go-badge" style="animation-delay:${1.4 + i * 0.12}s">${s}s SURVIVED</span>`)
+        .join('');
+
+    // ── Overlay ──────────────────────────────────────────────────────
     const overlay = document.createElement('div');
-    overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.7);z-index:1000;';
+    overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:1000;';
     document.body.appendChild(overlay);
 
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:1001;width:80%;max-width:420px;opacity:0;';
-    document.body.appendChild(container);
+    // ── Panel ────────────────────────────────────────────────────────
+    const panel = document.createElement('div');
+    panel.className = 'go-panel';
+    panel.innerHTML = `
+        <div class="go-title">GAME OVER</div>
+        <div class="go-time" id="goTimeCounter">0.00s</div>
+        <div class="go-stars" id="goStars"></div>
+        <div class="go-rank" id="goRank" style="color:${rankColor};animation-delay:0.9s">${rank}</div>
+        <div class="go-stats">
+            <div class="go-stat" style="animation-delay:1.0s">
+                <div class="go-stat-label">Time survived</div>
+                <div class="go-stat-value">${fmtScore(finalMs)}</div>
+            </div>
+            <div class="go-stat" style="animation-delay:1.05s">
+                <div class="go-stat-label">Best ever</div>
+                <div class="go-stat-value">${highScore}s</div>
+            </div>
+            <div class="go-stat" style="animation-delay:1.1s">
+                <div class="go-stat-label">Steps taken</div>
+                <div class="go-stat-value">${playerPath.length.toLocaleString()}</div>
+            </div>
+            <div class="go-stat" style="animation-delay:1.15s">
+                <div class="go-stat-label">Enemies dodged</div>
+                <div class="go-stat-value">${enemiesDodged}</div>
+            </div>
+            <div class="go-stat" style="animation-delay:1.2s">
+                <div class="go-stat-label">Closest call</div>
+                <div class="go-stat-value">${closestPx}</div>
+            </div>
+            <div class="go-stat" style="animation-delay:1.25s">
+                <div class="go-stat-label">Proximity</div>
+                <div class="go-stat-value" style="font-size:13px;padding-top:3px">${callLabel}</div>
+            </div>
+        </div>
+        <div class="go-badges">${badgeHTML}</div>
+        ${currentUser ? '<div class="go-saved" style="animation-delay:1.5s">Score saved to leaderboard!</div>' : ''}
+    `;
+    document.body.appendChild(panel);
 
     drawPlayerPath();
-
-    container.innerHTML = `
-        <div style="color:#FF4136;font-size:36px;font-weight:bold;margin-bottom:16px;">Game Over!</div>
-        <div style="color:#fff;font-size:24px;margin-bottom:6px;">Score: ${fmtScore(finalMs)}</div>
-        <div style="color:#ffd700;font-size:16px;margin-bottom:6px;">Best: ${highScore}s</div>
-        <div style="color:#fff;font-size:18px;margin-bottom:16px;">Steps: ${playerPath.length}</div>
-        ${currentUser ? '<div style="color:#4CAF50;font-size:13px;margin-bottom:12px;">Score saved!</div>' : ''}
-    `;
-
-    const lbBtn = document.createElement('button');
-    lbBtn.textContent = 'View Leaderboard';
-    lbBtn.style.cssText = 'padding:8px 18px;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:white;border-radius:6px;cursor:pointer;font-size:14px;margin-bottom:20px;';
-    lbBtn.addEventListener('click', showLeaderboard);
-    container.appendChild(lbBtn);
 
     // Cleanup enemies + helpers
     enemies.forEach(e => { if (e.element.parentNode === gameArea) gameArea.removeChild(e.element); });
     enemies = [];
-    gameArea.querySelectorAll('.helper').forEach(h => { if (h.parentNode === gameArea) gameArea.removeChild(h); });
+    if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
+    helperEl = null; helperPos = null;
 
+    // Animated time counter (counts up from 0 to final time over 1.3s)
+    const timeEl     = document.getElementById('goTimeCounter');
+    const countStart = performance.now();
+    const countDur   = 1300;
+    (function tick(now) {
+        const p  = Math.min((now - countStart) / countDur, 1);
+        const ms = Math.round(finalMs * p);
+        const s  = Math.floor(ms / 1000);
+        const cs = Math.floor((ms % 1000) / 10);
+        timeEl.textContent = `${s}.${String(cs).padStart(2, '0')}s`;
+        if (p < 1) requestAnimationFrame(tick);
+    })(performance.now());
+
+    // Stars pop in one by one
+    const starsEl = document.getElementById('goStars');
+    for (let i = 0; i < 5; i++) {
+        const star = document.createElement('span');
+        star.className = 'go-star';
+        star.textContent = i < stars ? '★' : '☆';
+        star.style.color = i < stars ? '#FFD700' : 'rgba(255,255,255,0.15)';
+        star.style.animationDelay = (1.0 + i * 0.12) + 's';
+        starsEl.appendChild(star);
+    }
+
+    // Leaderboard button
+    const lbBtn = document.createElement('button');
+    lbBtn.className   = 'go-lb-btn';
+    lbBtn.textContent = 'View Leaderboard';
+    lbBtn.addEventListener('click', showLeaderboard);
+    panel.appendChild(lbBtn);
+
+    // Restart prompt after 2.5s
     setTimeout(() => {
         const restartMsg = document.createElement('div');
+        restartMsg.className   = 'go-restart';
         restartMsg.textContent = 'Press any key or tap to restart';
-        restartMsg.style.cssText = 'color:#7FDBFF;font-size:16px;cursor:pointer;';
-        container.appendChild(restartMsg);
+        panel.appendChild(restartMsg);
 
         function restart() {
             document.body.removeChild(overlay);
-            document.body.removeChild(container);
+            document.body.removeChild(panel);
             document.removeEventListener('keydown', restart);
             document.removeEventListener('touchstart', restart);
             startGame();
         }
         document.addEventListener('keydown', restart);
         document.addEventListener('touchstart', restart);
-    }, 2000);
-
-    let opacity = 0;
-    const fadeIn = setInterval(() => {
-        opacity = Math.min(1, opacity + 0.1);
-        container.style.opacity = opacity;
-        if (opacity >= 1) clearInterval(fadeIn);
-    }, 50);
+    }, 2500);
 }
 
 // ===== START GAME =====
@@ -499,10 +620,15 @@ function startGame() {
 
     playerPath = [{ x: playerPos.x, y: playerPos.y }];
     enemies = [];
-    elapsedSeconds = 0;
+    elapsedSeconds   = 0;
     currentElapsedMs = 0;
-    isDashing = false;
-    dashCooldown = false;
+    isDashing        = false;
+    dashCooldown     = false;
+    closestCall      = Infinity;
+    enemiesDodged    = 0;
+    milestoneShown   = new Set();
+    helperPos        = null;
+    helperEl         = null;
     dashIndicator.style.transition = 'none';
     dashIndicator.style.width = '100%';
     gameRunning = true;
@@ -514,7 +640,14 @@ function startGame() {
     gameInterval = setInterval(() => {
         currentElapsedMs = Date.now() - gameStartTime;
         elapsedSeconds = Math.floor(currentElapsedMs / 1000);
-        scoreDisplay.textContent = `Progress: ${elapsedSeconds}s${String(currentElapsedMs % 1000).padStart(3, '0')}`;
+        const cs = Math.floor((currentElapsedMs % 1000) / 10);
+        scoreDisplay.textContent = `Progress: ${elapsedSeconds}.${String(cs).padStart(2, '0')}s`;
+
+        // Milestone speed-up alerts
+        if (elapsedSeconds >= 10 && !milestoneShown.has(10)) { milestoneShown.add(10); showMilestone('SPEED UP!'); }
+        if (elapsedSeconds >= 20 && !milestoneShown.has(20)) { milestoneShown.add(20); showMilestone('FASTER!'); }
+        if (elapsedSeconds >= 30 && !milestoneShown.has(30)) { milestoneShown.add(30); showMilestone('MAXIMUM SPEED!'); }
+
         movePlayer();
         updateEnemies();
     }, 50);
