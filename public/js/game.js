@@ -109,13 +109,27 @@ function showStory() {
         screen.style.opacity = '1';
     }));
 
-    const DELAY = 3600; // ms between each paragraph appearing
-    const timers = [];
+    const SHOW_MS  = 3400; // how long each paragraph stays visible
+    const FADE_MS  = 1300; // matches CSS transition duration
+    const timers   = [];
+    let   current  = -1;
 
-    paras.forEach((para, i) => {
-        timers.push(setTimeout(() => para.classList.add('visible'), i * DELAY));
-    });
-    timers.push(setTimeout(() => beginBtn.classList.add('visible'), paras.length * DELAY));
+    function nextPara() {
+        // Fade out current
+        if (current >= 0) paras[current].classList.remove('visible');
+        current++;
+        if (current < paras.length) {
+            // Fade in next after the outgoing fade finishes
+            timers.push(setTimeout(() => {
+                paras[current].classList.add('visible');
+                timers.push(setTimeout(nextPara, SHOW_MS));
+            }, current === 0 ? 0 : FADE_MS));
+        } else {
+            // All done — show begin button
+            timers.push(setTimeout(() => beginBtn.classList.add('visible'), FADE_MS));
+        }
+    }
+    timers.push(setTimeout(nextPara, 400));
 
     function proceed() {
         timers.forEach(clearTimeout);

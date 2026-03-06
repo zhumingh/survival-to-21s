@@ -469,18 +469,27 @@ body {
 }
 .story-logo span { color: rgba(0,220,90,0.5); }
 
+#storyParaWrap {
+    position: relative;
+    width: 100%;
+    height: 260px;   /* fixed height — button never shifts */
+    margin-bottom: 36px;
+}
+
 .story-para {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
     opacity: 0;
     font-size: 17px;
     line-height: 1.9;
     color: rgba(255,255,255,0.82);
-    margin-bottom: 36px;
-    transition: opacity 1.4s ease, transform 1.4s ease;
-    transform: translateY(14px);
+    transition: opacity 1.3s ease;
+    pointer-events: none;
 }
 .story-para.visible {
     opacity: 1;
-    transform: translateY(0);
+    pointer-events: auto;
 }
 .story-para strong {
     color: #fff;
