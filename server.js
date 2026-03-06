@@ -26,6 +26,9 @@ db.exec(`
   );
 `);
 
+// Safe migration: add country column to existing DBs
+try { db.exec(`ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''`); } catch (_) {}
+
 app.use(express.json());
 app.use(session({
   secret: process.env.SESSION_SECRET || 'dodge-game-secret-key',
@@ -42,18 +45,21 @@ function requireAuth(req, res, next) {
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, country } = req.body;
   const name = username?.trim();
   if (!name || !password) return res.status(400).json({ error: 'Username and password required' });
   if (name.length < 2 || name.length > 20) return res.status(400).json({ error: 'Username must be 2–20 characters' });
   if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
 
+  const countryCode = /^[A-Z]{2}$/.test((country || '').toUpperCase()) ? country.toUpperCase() : '';
+
   try {
     const hash = await bcrypt.hash(password, 10);
-    const result = db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run(name, hash);
+    const result = db.prepare('INSERT INTO users (username, password_hash, country) VALUES (?, ?, ?)').run(name, hash, countryCode);
     req.session.userId = result.lastInsertRowid;
     req.session.username = name;
-    res.json({ success: true, username: name });
+    req.session.country  = countryCode;
+    res.json({ success: true, username: name, country: countryCode });
   } catch (err) {
     if (err.message.includes('UNIQUE')) return res.status(409).json({ error: 'Username already taken' });
     console.error(err);
@@ -70,9 +76,10 @@ app.post('/api/auth/login', async (req, res) => {
   const valid = await bcrypt.compare(password, user.password_hash);
   if (!valid) return res.status(401).json({ error: 'Invalid username or password' });
 
-  req.session.userId = user.id;
+  req.session.userId  = user.id;
   req.session.username = user.username;
-  res.json({ success: true, username: user.username });
+  req.session.country  = user.country || '';
+  res.json({ success: true, username: user.username, country: user.country || '' });
 });
 
 // Logout
@@ -83,7 +90,7 @@ app.post('/api/auth/logout', (req, res) => {
 // Current user
 app.get('/api/auth/me', (req, res) => {
   if (!req.session.userId) return res.json({ user: null });
-  res.json({ user: { id: req.session.userId, username: req.session.username } });
+  res.json({ user: { id: req.session.userId, username: req.session.username, country: req.session.country || '' } });
 });
 
 // Submit score
@@ -98,13 +105,30 @@ app.post('/api/scores', requireAuth, (req, res) => {
 // Global leaderboard — best score per user
 app.get('/api/leaderboard', (req, res) => {
   const rows = db.prepare(`
-    SELECT u.username, s.score_ms, s.steps, s.played_at
+    SELECT u.username, u.country, s.score_ms, s.steps, s.played_at
     FROM scores s
     JOIN users u ON s.user_id = u.id
     WHERE s.score_ms = (SELECT MAX(score_ms) FROM scores WHERE user_id = s.user_id)
     GROUP BY s.user_id
     ORDER BY s.score_ms DESC
     LIMIT 20
+  `).all();
+  res.json(rows);
+});
+
+// Country leaderboard — best score and player count per country
+app.get('/api/leaderboard/countries', (req, res) => {
+  const rows = db.prepare(`
+    SELECT u.country,
+           COUNT(DISTINCT u.id)    AS players,
+           MAX(s.score_ms)         AS best_ms,
+           CAST(ROUND(AVG(s.score_ms)) AS INTEGER) AS avg_ms
+    FROM scores s
+    JOIN users u ON s.user_id = u.id
+    WHERE u.country != ''
+    GROUP BY u.country
+    ORDER BY best_ms DESC
+    LIMIT 30
   `).all();
   res.json(rows);
 });

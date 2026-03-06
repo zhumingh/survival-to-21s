@@ -7,6 +7,51 @@ const scoreDisplay = document.getElementById('score');
 const highScoreDisplay = document.getElementById('highScore');
 const dashIndicator = document.getElementById('dashIndicator');
 
+// ===== COUNTRY DATA =====
+const COUNTRIES = [
+    ['AF','Afghanistan'],['AL','Albania'],['DZ','Algeria'],['AR','Argentina'],
+    ['AU','Australia'],['AT','Austria'],['BE','Belgium'],['BR','Brazil'],
+    ['CA','Canada'],['CL','Chile'],['CN','China'],['CO','Colombia'],
+    ['HR','Croatia'],['CZ','Czech Republic'],['DK','Denmark'],['EG','Egypt'],
+    ['FI','Finland'],['FR','France'],['DE','Germany'],['GR','Greece'],
+    ['HK','Hong Kong'],['HU','Hungary'],['IN','India'],['ID','Indonesia'],
+    ['IR','Iran'],['IQ','Iraq'],['IE','Ireland'],['IL','Israel'],
+    ['IT','Italy'],['JP','Japan'],['JO','Jordan'],['KZ','Kazakhstan'],
+    ['KE','Kenya'],['KR','South Korea'],['KW','Kuwait'],['LB','Lebanon'],
+    ['MY','Malaysia'],['MX','Mexico'],['MA','Morocco'],['NL','Netherlands'],
+    ['NZ','New Zealand'],['NG','Nigeria'],['NO','Norway'],['PK','Pakistan'],
+    ['PE','Peru'],['PH','Philippines'],['PL','Poland'],['PT','Portugal'],
+    ['QA','Qatar'],['RO','Romania'],['RU','Russia'],['SA','Saudi Arabia'],
+    ['RS','Serbia'],['SG','Singapore'],['ZA','South Africa'],['ES','Spain'],
+    ['LK','Sri Lanka'],['SE','Sweden'],['CH','Switzerland'],['TW','Taiwan'],
+    ['TH','Thailand'],['TR','Turkey'],['UA','Ukraine'],['AE','UAE'],
+    ['GB','United Kingdom'],['US','United States'],['VN','Vietnam']
+];
+
+const COUNTRY_MAP = Object.fromEntries(COUNTRIES.map(([c, n]) => [c, n]));
+
+function countryFlag(code) {
+    if (!code || code.length !== 2) return '';
+    const base = 0x1F1E6;
+    return String.fromCodePoint(base + code.charCodeAt(0) - 65) +
+           String.fromCodePoint(base + code.charCodeAt(1) - 65);
+}
+
+function countryName(code) {
+    return COUNTRY_MAP[code] || code;
+}
+
+// Populate country select
+(function () {
+    const sel = document.getElementById('authCountry');
+    COUNTRIES.forEach(([code, name]) => {
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.textContent = `${countryFlag(code)} ${name}`;
+        sel.appendChild(opt);
+    });
+})();
+
 // ===== AUTH STATE =====
 let currentUser = null;
 let authMode = 'login';
@@ -16,7 +61,7 @@ async function checkAuth() {
         const res = await fetch('/api/auth/me');
         const data = await res.json();
         if (data.user) {
-            currentUser = data.user;
+            currentUser = { ...data.user, country: data.user.country || '' };
             onLoggedIn();
         } else {
             showAuthScreen();
@@ -35,7 +80,9 @@ function onLoggedIn() {
     document.getElementById('authScreen').style.display = 'none';
     document.getElementById('gameInstructions').style.display = 'flex';
     document.getElementById('loggedInUsername').textContent = currentUser.username;
-    document.getElementById('currentUserDisplay').textContent = currentUser.username;
+    const flag = countryFlag(currentUser.country);
+    document.getElementById('currentUserDisplay').textContent =
+        (flag ? flag + ' ' : '') + currentUser.username;
 }
 
 document.getElementById('authSubmit').addEventListener('click', async () => {
@@ -51,15 +98,18 @@ document.getElementById('authSubmit').addEventListener('click', async () => {
     errorEl.textContent = '';
 
     const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    const body = { username, password };
+    if (authMode === 'register') body.country = document.getElementById('authCountry').value;
+
     try {
         const res = await fetch(endpoint, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username, password })
+            body: JSON.stringify(body)
         });
         const data = await res.json();
         if (!res.ok) { errorEl.textContent = data.error; return; }
-        currentUser = { username: data.username };
+        currentUser = { username: data.username, country: data.country || '' };
         onLoggedIn();
     } catch {
         errorEl.textContent = 'Connection error. Please try again.';
@@ -71,10 +121,12 @@ document.getElementById('authSubmit').addEventListener('click', async () => {
 
 document.getElementById('authToggleBtn').addEventListener('click', () => {
     authMode = authMode === 'login' ? 'register' : 'login';
-    document.getElementById('authFormTitle').textContent = authMode === 'login' ? 'Sign In' : 'Create Account';
-    document.getElementById('authSubmit').textContent    = authMode === 'login' ? 'Sign In' : 'Create Account';
+    const isReg = authMode === 'register';
+    document.getElementById('authFormTitle').textContent = isReg ? 'Create Account' : 'Sign In';
+    document.getElementById('authSubmit').textContent    = isReg ? 'Create Account' : 'Sign In';
     document.getElementById('authToggleBtn').textContent =
-        authMode === 'login' ? 'New here? Create an account' : 'Already have an account? Sign in';
+        isReg ? 'Already have an account? Sign in' : 'New here? Create an account';
+    document.getElementById('countryGroup').style.display = isReg ? 'block' : 'none';
     document.getElementById('authError').textContent = '';
 });
 
@@ -128,15 +180,13 @@ async function loadLeaderboardTab(tab) {
     contentEl.textContent = 'Loading...';
 
     try {
-        const url = tab === 'global' ? '/api/leaderboard' : '/api/scores/me';
-        const res = await fetch(url);
+        const urlMap = { global: '/api/leaderboard', mine: '/api/scores/me', countries: '/api/leaderboard/countries' };
+        const res = await fetch(urlMap[tab]);
         if (res.status === 401) { contentEl.textContent = 'Login to see your scores.'; return; }
         const rows = await res.json();
 
-        if (!rows.length) {
-            contentEl.textContent = tab === 'global' ? 'No scores yet. Be the first!' : 'No scores yet. Play a game!';
-            return;
-        }
+        const empty = { global: 'No scores yet. Be the first!', mine: 'No scores yet. Play a game!', countries: 'No country data yet.' };
+        if (!rows.length) { contentEl.textContent = empty[tab]; return; }
 
         const table = document.createElement('table');
         table.className = 'lb-table';
@@ -147,10 +197,26 @@ async function loadLeaderboardTab(tab) {
             rows.forEach((row, i) => {
                 const tr = document.createElement('tr');
                 if (currentUser && row.username === currentUser.username) tr.className = 'lb-me';
-                tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${fmtScore(row.score_ms)}</td><td>${row.steps}</td>`;
+                const flag = row.country ? countryFlag(row.country) + ' ' : '';
+                tr.innerHTML = `<td>${i + 1}</td><td>${flag}${row.username}</td><td>${fmtScore(row.score_ms)}</td><td>${row.steps}</td>`;
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
+
+        } else if (tab === 'countries') {
+            table.innerHTML = `<thead><tr><th>#</th><th>Country</th><th>Players</th><th>Best</th><th>Avg</th></tr></thead>`;
+            const tbody = document.createElement('tbody');
+            rows.forEach((row, i) => {
+                const tr = document.createElement('tr');
+                const flag = countryFlag(row.country);
+                const name = countryName(row.country);
+                const isMe = currentUser && currentUser.country === row.country;
+                if (isMe) tr.className = 'lb-me';
+                tr.innerHTML = `<td>${i + 1}</td><td>${flag} ${name}</td><td>${row.players}</td><td>${fmtScore(row.best_ms)}</td><td>${fmtScore(row.avg_ms)}</td>`;
+                tbody.appendChild(tr);
+            });
+            table.appendChild(tbody);
+
         } else {
             table.innerHTML = `<thead><tr><th>#</th><th>Time</th><th>Steps</th><th>Date</th></tr></thead>`;
             const tbody = document.createElement('tbody');

@@ -49,6 +49,11 @@
             <div class="input-group">
                 <input type="password" id="authPassword" placeholder="Password" autocomplete="current-password">
             </div>
+            <div class="input-group" id="countryGroup" style="display:none">
+                <select id="authCountry">
+                    <option value="">— Country (optional) —</option>
+                </select>
+            </div>
             <div id="authError"></div>
             <button id="authSubmit">Sign In</button>
             <button id="authToggleBtn" class="link-btn">New here? Create an account</button>
@@ -61,6 +66,7 @@
             <h2>Leaderboard</h2>
             <div id="leaderboardTabs">
                 <button class="lb-tab active" data-tab="global">Global</button>
+                <button class="lb-tab" data-tab="countries">Countries</button>
                 <button class="lb-tab" data-tab="mine">My Scores</button>
             </div>
             <div id="leaderboardContent">Loading...</div>
