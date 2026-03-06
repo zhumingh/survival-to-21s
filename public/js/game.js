@@ -76,13 +76,69 @@ function showAuthScreen() {
     document.getElementById('gameInstructions').style.display = 'none';
 }
 
+let storyShown = false;
+
 function onLoggedIn() {
     document.getElementById('authScreen').style.display = 'none';
-    document.getElementById('gameInstructions').style.display = 'flex';
     document.getElementById('loggedInUsername').textContent = currentUser.username;
     const flag = countryFlag(currentUser.country);
     document.getElementById('currentUserDisplay').textContent =
         (flag ? flag + ' ' : '') + currentUser.username;
+
+    if (storyShown) {
+        showLobby();
+    } else {
+        storyShown = true;
+        showStory();
+    }
+}
+
+function showLobby() {
+    document.getElementById('gameInstructions').style.display = 'flex';
+}
+
+function showStory() {
+    const screen  = document.getElementById('storyScreen');
+    const paras   = Array.from(document.querySelectorAll('.story-para'));
+    const beginBtn = document.getElementById('storyBeginBtn');
+    const skipBtn  = document.getElementById('storySkipBtn');
+
+    screen.style.opacity = '0';
+    screen.style.display = 'flex';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+        screen.style.opacity = '1';
+    }));
+
+    const DELAY = 3600; // ms between each paragraph appearing
+    const timers = [];
+
+    paras.forEach((para, i) => {
+        timers.push(setTimeout(() => para.classList.add('visible'), i * DELAY));
+    });
+    timers.push(setTimeout(() => beginBtn.classList.add('visible'), paras.length * DELAY));
+
+    function proceed() {
+        timers.forEach(clearTimeout);
+        screen.style.opacity = '0';
+        skipBtn.removeEventListener('click', proceed);
+        beginBtn.removeEventListener('click', proceed);
+        document.removeEventListener('keydown', onKey);
+        setTimeout(() => {
+            screen.style.display = 'none';
+            // Reset for next time it might be shown
+            paras.forEach(p => p.classList.remove('visible'));
+            beginBtn.classList.remove('visible');
+            showLobby();
+        }, 700);
+    }
+
+    function onKey(e) {
+        if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') proceed();
+    }
+
+    beginBtn.addEventListener('click', proceed);
+    skipBtn.addEventListener('click', proceed);
+    document.addEventListener('keydown', onKey);
 }
 
 document.getElementById('authSubmit').addEventListener('click', async () => {

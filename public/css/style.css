@@ -417,6 +417,130 @@ body {
     color: #fff;
 }
 
+/* ===== STORY / INTRO SCREEN ===== */
+@keyframes storyFadeIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes declarationGlow {
+    0%, 100% { text-shadow: 0 0 12px rgba(0,255,100,0.5); }
+    50%       { text-shadow: 0 0 28px rgba(0,255,100,0.9), 0 0 50px rgba(0,255,100,0.4); }
+}
+@keyframes beginPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(0,200,80,0.3); }
+    50%       { box-shadow: 0 4px 36px rgba(0,200,80,0.65), 0 0 60px rgba(0,200,80,0.15); }
+}
+
+#storyScreen {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1950;
+    background-color: #06060f;
+    background-image:
+        radial-gradient(ellipse at 50% 60%, rgba(0,200,80,0.07) 0%, transparent 65%),
+        linear-gradient(rgba(0,255,90,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,255,90,0.025) 1px, transparent 1px);
+    background-size: 100% 100%, 52px 52px, 52px 52px;
+    transition: opacity 0.7s ease;
+    padding: 32px 24px;
+    overflow-y: auto;
+}
+
+#storyWrap {
+    max-width: 620px;
+    width: 100%;
+    text-align: center;
+    color: white;
+    font-family: Georgia, 'Times New Roman', serif;
+}
+
+.story-logo {
+    font-family: Arial, sans-serif;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.25);
+    margin-bottom: 48px;
+}
+.story-logo span { color: rgba(0,220,90,0.5); }
+
+.story-para {
+    opacity: 0;
+    font-size: 17px;
+    line-height: 1.9;
+    color: rgba(255,255,255,0.82);
+    margin-bottom: 36px;
+    transition: opacity 1.4s ease, transform 1.4s ease;
+    transform: translateY(14px);
+}
+.story-para.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+.story-para strong {
+    color: #fff;
+    font-weight: bold;
+}
+.story-para em {
+    color: rgba(200,255,220,0.9);
+    font-style: italic;
+}
+.story-declaration {
+    font-size: 22px;
+    color: #00e664 !important;
+    letter-spacing: 1px;
+    animation: declarationGlow 2.5s ease-in-out infinite;
+}
+
+#storyBeginBtn {
+    opacity: 0;
+    display: block;
+    margin: 20px auto 0;
+    padding: 14px 40px;
+    background: linear-gradient(135deg, #1db954, #00c853);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 17px;
+    font-weight: 700;
+    font-family: Arial, sans-serif;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: opacity 1s ease, transform 0.15s;
+    animation: beginPulse 2s ease-in-out infinite;
+    pointer-events: none;
+}
+#storyBeginBtn.visible {
+    opacity: 1;
+    pointer-events: auto;
+}
+#storyBeginBtn:hover { transform: translateY(-2px); }
+
+#storySkipBtn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: rgba(255,255,255,0.35);
+    font-size: 13px;
+    font-family: Arial, sans-serif;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.5px;
+}
+#storySkipBtn:hover {
+    color: rgba(255,255,255,0.7);
+    border-color: rgba(255,255,255,0.4);
+}
+
 /* ===== IN-GAME HUD ===== */
 #currentUserDisplay {
     position: absolute;
