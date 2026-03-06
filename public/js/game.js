@@ -664,6 +664,10 @@ function endGame() {
     panel.className = 'go-panel';
     panel.innerHTML = `
         <div class="go-title">GAME OVER</div>
+        <div class="go-player">
+            <span class="go-player-flag">${currentUser ? (countryFlag(currentUser.country) || '🎮') : '🎮'}</span>
+            <span class="go-player-name">${currentUser ? currentUser.username : 'Guest'}</span>
+        </div>
         <div class="go-time" id="goTimeCounter">0.00s</div>
         <div class="go-stars" id="goStars"></div>
         <div class="go-rank" id="goRank" style="color:${rankColor};animation-delay:0.9s">${rank}</div>
