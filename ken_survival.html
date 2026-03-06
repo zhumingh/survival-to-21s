@@ -499,7 +499,7 @@
             clearTimeout(milestoneTimer);
             milestoneDisplay.textContent = text;
             milestoneDisplay.style.opacity = '1';
-            milestoneTimer = setTimeout(() => { milestoneDisplay.style.opacity = '0'; }, 1800);
+            milestoneTimer = setTimeout(() => { milestoneDisplay.style.opacity = '0'; }, 700);
         }
 
         // ── Main game loop (requestAnimationFrame) ──────────────────────
@@ -661,10 +661,11 @@
             setTimeout(() => {
                 const restartMsg = document.createElement('div');
                 restartMsg.className = 'go-restart';
-                restartMsg.textContent = 'Press any key or tap to restart';
+                restartMsg.textContent = 'Press Enter / Space or tap to restart';
                 panel.appendChild(restartMsg);
 
-                function restartGame() {
+                function restartGame(e) {
+                    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
                     document.body.removeChild(overlay);
                     document.body.removeChild(panel);
                     document.removeEventListener('keydown', restartGame);

@@ -429,7 +429,7 @@ function showMilestone(text) {
     clearTimeout(milestoneTimer);
     el.textContent = text;
     el.style.opacity = '1';
-    milestoneTimer = setTimeout(() => { el.style.opacity = '0'; }, 1800);
+    milestoneTimer = setTimeout(() => { el.style.opacity = '0'; }, 700);
 }
 
 // ===== PATH DRAWING =====
@@ -589,10 +589,11 @@ function endGame() {
     setTimeout(() => {
         const restartMsg = document.createElement('div');
         restartMsg.className   = 'go-restart';
-        restartMsg.textContent = 'Press any key or tap to restart';
+        restartMsg.textContent = 'Press Enter / Space or tap to restart';
         panel.appendChild(restartMsg);
 
-        function restart() {
+        function restart(e) {
+            if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
             document.body.removeChild(overlay);
             document.body.removeChild(panel);
             document.removeEventListener('keydown', restart);
