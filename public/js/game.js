@@ -685,6 +685,7 @@ function endGame() {
     clearInterval(helperInterval);
     clearTimeout(milestoneTimer);
     pauseMusic();
+    playGameOverSound();
 
     const finalMs   = currentElapsedMs;
     const finalSecs = finalMs / 1000;
@@ -884,31 +885,154 @@ function startGame() {
 
     enemyInterval = setInterval(createEnemy, 100);
     helperInterval = setInterval(createHelper, 5000);
-    bgMusic.currentTime = 0;
     playMusic();
 }
 
-// ===== MUSIC =====
-const bgMusic = document.getElementById('bgMusic');
-bgMusic.volume = 0.3;
+// ===== MUSIC (Web Audio API) =====
+let audioCtx = null;
+let masterGain = null;
+let bgNodes = [];
 let musicMuted = false;
+let arpeggioTimer = null;
+
+function ensureCtx() {
+    if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        masterGain = audioCtx.createGain();
+        masterGain.gain.value = musicMuted ? 0 : 0.22;
+        masterGain.connect(audioCtx.destination);
+    }
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+}
+
+function stopBgNodes() {
+    if (arpeggioTimer) { clearInterval(arpeggioTimer); arpeggioTimer = null; }
+    bgNodes.forEach(n => { try { n.stop(); } catch(_) {} });
+    bgNodes = [];
+}
+
+// Soft sine pluck — one note at a time
+function pluckNote(freq, vol, when) {
+    const osc = audioCtx.createOscillator();
+    const g   = audioCtx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(vol, when + 0.04);
+    g.gain.exponentialRampToValueAtTime(0.001, when + 1.6);
+    osc.connect(g); g.connect(masterGain);
+    osc.start(when); osc.stop(when + 1.7);
+    bgNodes.push(osc, g);
+}
 
 function playMusic() {
+    ensureCtx();
+    stopBgNodes();
     if (musicMuted) return;
-    bgMusic.play().catch(() => {}); // ignore autoplay policy errors
+
+    const now = audioCtx.currentTime;
+
+    // --- deep sub-bass breath (very soft) ---
+    const sub = audioCtx.createOscillator();
+    const subG = audioCtx.createGain();
+    sub.type = 'sine';
+    sub.frequency.value = 55; // A1
+    subG.gain.setValueAtTime(0, now);
+    subG.gain.linearRampToValueAtTime(0.06, now + 3);
+    sub.connect(subG); subG.connect(masterGain);
+    sub.start(now);
+    bgNodes.push(sub, subG);
+
+    // --- slow breathing LFO on sub ---
+    const breathLfo = audioCtx.createOscillator();
+    const breathG   = audioCtx.createGain();
+    breathLfo.frequency.value = 0.12;
+    breathG.gain.value = 0.03;
+    breathLfo.connect(breathG); breathG.connect(subG.gain);
+    breathLfo.start(now);
+    bgNodes.push(breathLfo, breathG);
+
+    // --- warm pad (Am chord: A3, C4, E4) slowly fading in ---
+    const padNotes = [220, 261.63, 329.63, 440];
+    padNotes.forEach((freq, i) => {
+        const osc = audioCtx.createOscillator();
+        const f   = audioCtx.createBiquadFilter();
+        const g   = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.value = freq + (i % 2 === 0 ? 0.5 : -0.5); // subtle chorus detune
+        f.type = 'lowpass'; f.frequency.value = 900; f.Q.value = 1;
+        g.gain.setValueAtTime(0, now);
+        g.gain.linearRampToValueAtTime(0.04 - i * 0.006, now + 4 + i);
+        osc.connect(f); f.connect(g); g.connect(masterGain);
+        osc.start(now);
+        bgNodes.push(osc, f, g);
+    });
+
+    // --- pentatonic arpeggio: Am pentatonic A3 C4 D4 E4 G4 ---
+    const arpScale = [220, 261.63, 293.66, 329.63, 392.00, 440, 523.25, 587.33];
+    let arpIdx = 0;
+    const playArp = () => {
+        if (!audioCtx || musicMuted) return;
+        const t = audioCtx.currentTime;
+        pluckNote(arpScale[arpIdx % arpScale.length], 0.055, t);
+        // every 4th note add a soft octave below for depth
+        if (arpIdx % 4 === 0) pluckNote(arpScale[arpIdx % arpScale.length] / 2, 0.03, t + 0.01);
+        arpIdx++;
+    };
+    // stagger start so pad fades in first
+    setTimeout(() => {
+        if (!audioCtx) return;
+        playArp();
+        arpeggioTimer = setInterval(playArp, 480); // ~125 BPM feel, gentle
+    }, 2000);
 }
+
 function pauseMusic() {
-    bgMusic.pause();
+    stopBgNodes();
 }
+
+function playGameOverSound() {
+    ensureCtx();
+    const now = audioCtx.currentTime;
+    const out  = audioCtx.destination;
+
+    // soft descending Am chord — three sine notes fading out slowly
+    [[220, 0], [261.63, 0.08], [329.63, 0.16]].forEach(([freq, delay]) => {
+        const osc = audioCtx.createOscillator();
+        const g   = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, now + delay);
+        osc.frequency.linearRampToValueAtTime(freq * 0.96, now + delay + 2.5);
+        g.gain.setValueAtTime(0, now + delay);
+        g.gain.linearRampToValueAtTime(0.12, now + delay + 0.15);
+        g.gain.exponentialRampToValueAtTime(0.001, now + delay + 2.8);
+        osc.connect(g); g.connect(out);
+        osc.start(now + delay); osc.stop(now + delay + 3);
+    });
+
+    // very soft low rumble — sine sweep down
+    const rumble = audioCtx.createOscillator();
+    const rumbleG = audioCtx.createGain();
+    const rumbleF = audioCtx.createBiquadFilter();
+    rumble.type = 'sine';
+    rumble.frequency.setValueAtTime(80, now);
+    rumble.frequency.exponentialRampToValueAtTime(35, now + 2.2);
+    rumbleF.type = 'lowpass'; rumbleF.frequency.value = 200;
+    rumbleG.gain.setValueAtTime(0, now);
+    rumbleG.gain.linearRampToValueAtTime(0.09, now + 0.1);
+    rumbleG.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+    rumble.connect(rumbleF); rumbleF.connect(rumbleG); rumbleG.connect(out);
+    rumble.start(now); rumble.stop(now + 2.5);
+}
+
 
 document.getElementById('muteBtn').addEventListener('click', () => {
     musicMuted = !musicMuted;
     document.getElementById('muteBtn').classList.toggle('muted', musicMuted);
-    if (musicMuted) {
-        bgMusic.pause();
-    } else if (gameRunning) {
-        bgMusic.play().catch(() => {});
+    if (masterGain) {
+        masterGain.gain.setTargetAtTime(musicMuted ? 0 : 0.28, audioCtx.currentTime, 0.1);
     }
+    if (!musicMuted && gameRunning) playMusic();
 });
 
 // ===== EVENT LISTENERS =====
