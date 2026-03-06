@@ -192,13 +192,14 @@ async function loadLeaderboardTab(tab) {
         table.className = 'lb-table';
 
         if (tab === 'global') {
-            table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Time</th><th>Steps</th></tr></thead>`;
+            table.innerHTML = `<thead><tr><th>#</th><th>Player</th><th>Country</th><th>Time</th><th>Steps</th></tr></thead>`;
             const tbody = document.createElement('tbody');
             rows.forEach((row, i) => {
                 const tr = document.createElement('tr');
                 if (currentUser && row.username === currentUser.username) tr.className = 'lb-me';
-                const flag = row.country ? countryFlag(row.country) + ' ' : '';
-                tr.innerHTML = `<td>${i + 1}</td><td>${flag}${row.username}</td><td>${fmtScore(row.score_ms)}</td><td>${row.steps}</td>`;
+                const flag = row.country ? countryFlag(row.country) : '🏳';
+                const name = row.country ? countryName(row.country) : '—';
+                tr.innerHTML = `<td>${i + 1}</td><td>${row.username}</td><td>${flag} ${name}</td><td>${fmtScore(row.score_ms)}</td><td>${row.steps}</td>`;
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
