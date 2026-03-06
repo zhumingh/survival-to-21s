@@ -434,10 +434,11 @@ function showMilestone(text) {
 
 // ===== PATH DRAWING =====
 function drawPlayerPath() {
+    if (playerPath.length < 2) return;
     const canvas = document.createElement('canvas');
     canvas.width = gameArea.clientWidth;
     canvas.height = gameArea.clientHeight;
-    Object.assign(canvas.style, { position: 'absolute', top: '0', left: '0', zIndex: '999' });
+    Object.assign(canvas.style, { position: 'absolute', top: '0', left: '0', zIndex: '999', pointerEvents: 'none' });
     gameArea.appendChild(canvas);
 
     const ctx = canvas.getContext('2d');
@@ -451,6 +452,90 @@ function drawPlayerPath() {
     }
     ctx.lineTo(playerPath[playerPath.length - 1].x, playerPath[playerPath.length - 1].y);
     ctx.stroke();
+}
+
+// Draws a scaled, fitted path trace inside the game-over panel
+function drawPathInPanel(containerEl) {
+    if (playerPath.length < 2) return;
+
+    // Bounding box of the actual path
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of playerPath) {
+        if (p.x < minX) minX = p.x;
+        if (p.x > maxX) maxX = p.x;
+        if (p.y < minY) minY = p.y;
+        if (p.y > maxY) maxY = p.y;
+    }
+
+    const PAD   = 22;
+    const CW    = 370;
+    const CH    = 200;
+    const pathW = (maxX - minX) || 1;
+    const pathH = (maxY - minY) || 1;
+    const scale = Math.min((CW - PAD * 2) / pathW, (CH - PAD * 2) / pathH);
+    const offX  = PAD + ((CW - PAD * 2) - pathW * scale) / 2;
+    const offY  = PAD + ((CH - PAD * 2) - pathH * scale) / 2;
+
+    const tx = x => offX + (x - minX) * scale;
+    const ty = y => offY + (y - minY) * scale;
+
+    const canvas  = document.createElement('canvas');
+    canvas.width  = CW;
+    canvas.height = CH;
+    canvas.style.cssText = 'width:100%;border-radius:10px;display:block;';
+
+    const ctx = canvas.getContext('2d');
+
+    // Dark background
+    ctx.fillStyle = '#06060f';
+    ctx.fillRect(0, 0, CW, CH);
+
+    // Subtle grid
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x <= CW; x += 32) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, CH); ctx.stroke(); }
+    for (let y = 0; y <= CH; y += 32) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(CW, y); ctx.stroke(); }
+
+    // Glowing path
+    ctx.save();
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur  = 7;
+    ctx.strokeStyle = 'rgba(0,255,136,0.9)';
+    ctx.lineWidth   = 2;
+    ctx.lineCap     = 'round';
+    ctx.lineJoin    = 'round';
+    ctx.beginPath();
+    ctx.moveTo(tx(playerPath[0].x), ty(playerPath[0].y));
+    for (let i = 1; i < playerPath.length - 1; i++) {
+        const cpx = (playerPath[i].x + playerPath[i + 1].x) / 2;
+        const cpy = (playerPath[i].y + playerPath[i + 1].y) / 2;
+        ctx.bezierCurveTo(tx(playerPath[i].x), ty(playerPath[i].y), tx(cpx), ty(cpy), tx(playerPath[i + 1].x), ty(playerPath[i + 1].y));
+    }
+    ctx.lineTo(tx(playerPath[playerPath.length - 1].x), ty(playerPath[playerPath.length - 1].y));
+    ctx.stroke();
+    ctx.restore();
+
+    // Start marker — green dot
+    ctx.save();
+    ctx.shadowColor = '#00ff88';
+    ctx.shadowBlur  = 10;
+    ctx.fillStyle   = '#00ff88';
+    ctx.beginPath();
+    ctx.arc(tx(playerPath[0].x), ty(playerPath[0].y), 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // Death marker — red dot
+    ctx.save();
+    ctx.shadowColor = '#FF4136';
+    ctx.shadowBlur  = 12;
+    ctx.fillStyle   = '#FF4136';
+    ctx.beginPath();
+    ctx.arc(tx(playerPath[playerPath.length - 1].x), ty(playerPath[playerPath.length - 1].y), 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    containerEl.appendChild(canvas);
 }
 
 // ===== END GAME =====
@@ -515,6 +600,8 @@ function endGame() {
         <div class="go-time" id="goTimeCounter">0.00s</div>
         <div class="go-stars" id="goStars"></div>
         <div class="go-rank" id="goRank" style="color:${rankColor};animation-delay:0.9s">${rank}</div>
+        <div id="goPathCanvas" style="margin-bottom:4px;"></div>
+        <div style="color:rgba(255,255,255,0.2);font-size:10px;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">Your route this round</div>
         <div class="go-stats">
             <div class="go-stat" style="animation-delay:1.0s">
                 <div class="go-stat-label">Time survived</div>
@@ -547,6 +634,7 @@ function endGame() {
     document.body.appendChild(panel);
 
     drawPlayerPath();
+    drawPathInPanel(document.getElementById('goPathCanvas'));
 
     // Cleanup enemies + helpers
     enemies.forEach(e => { if (e.element.parentNode === gameArea) gameArea.removeChild(e.element); });
