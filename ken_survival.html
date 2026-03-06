@@ -2,22 +2,21 @@
 <html lang="en">
 <head>
     <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-DJM7SC6MTC"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-DJM7SC6MTC');
-</script>
-
-    
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-DJM7SC6MTC"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+        gtag('js', new Date());
+        gtag('config', 'G-DJM7SC6MTC');
+    </script>
 
     <title>Dodge Survival Game | KenPlay.Fun</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Test your reflexes in this exciting Dodge Survival Game. Avoid obstacles and survive as long as you can in this thrilling mini-game at KenPlay.Fun!">
     <meta name="keywords" content="dodge survival, reflex game, mini-game, KenPlay.Fun">
     <link rel="canonical" href="https://kenplay.fun/survival.html">
-    
+
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website">
     <meta property="og:url" content="https://kenplay.fun/survival.html">
@@ -33,18 +32,52 @@
     <meta property="twitter:image" content="https://kenplay.fun/res/share.png">
 
     <style>
-        #gameTitle {
-            position: absolute;
-            top: -40px;
-            left: 0;
-            width: 100%;
-            text-align: center;
-            color: #fff;
-            font-size: 24px;
-            font-weight: bold;
-            background-color: rgba(0, 0, 0, 0.5);
-            padding: 5px 0;
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #87CEEB, #E0F7FA, #B2EBF2);
+            background-size: 400% 400%;
+            animation: gradientAnimation 15s ease infinite;
+            font-family: Arial, sans-serif;
         }
+
+        @keyframes gradientAnimation {
+            0%   { background-position: 0% 50%; }
+            50%  { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        #gameArea {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #171717;
+            overflow: hidden;
+        }
+
+        #player {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: #00ff00;
+        }
+
+        .enemy {
+            position: absolute;
+            border-radius: 50%;
+        }
+
+        #score {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-size: 16px;
+        }
+
         #gameInstructions {
             position: fixed;
             top: 50%;
@@ -58,6 +91,7 @@
             z-index: 1000;
             max-width: 80%;
         }
+
         #startButton {
             margin-top: 20px;
             padding: 10px 20px;
@@ -68,332 +102,229 @@
             border-radius: 5px;
             cursor: pointer;
         }
-    </style>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Escape Game</title>
-    <style>
-        body {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f0f0f0;
-            font-family: Arial, sans-serif;
-        }
-        #gameArea {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background-color: #171717;
-            overflow: hidden;
-        }
-        .player, .enemy {
+
+        #milestone {
             position: absolute;
-            width: 10px;
-            height: 10px;
-        }
-        .player {
-            background-color: #00ff00; /* Bright green */
-        }
-        .enemy {
-            border-radius: 50%; /* Makes the enemy circular */
-            background-color: #f00;
-        }
-        #score {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            color: #fff;
-            font-size: 16px;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #FFD700;
+            font-size: 28px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 500;
+            text-shadow: 0 0 12px #FF8C00;
+            white-space: nowrap;
         }
     </style>
 </head>
 <body>
-    <style>
-        body {
-            background: linear-gradient(135deg, #87CEEB, #E0F7FA, #B2EBF2);
-            background-size: 400% 400%;
-            animation: gradientAnimation 15s ease infinite;
-        }
-
-        @keyframes gradientAnimation {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
-        }
-    </style>
     <div id="gameInstructions">
         <h2>Game Instructions</h2>
-        <p>Use the arrow keys (up, down, left, right), individually or in combination, to control the survivor and escape from all the dark forces of society.</p>
-        <p>At 10 seconds, 20 seconds, and 30 seconds, one or more suddenly accelerating enemies will attack.</p>
-        <p>Survive as long as possible to achieve a high score!</p>
+        <p>Use arrow keys to move. On mobile, drag your finger to steer.</p>
+        <p>At 10s, 20s, and 30s, enemies suddenly accelerate!</p>
+        <p>A decoy (white circle) appears every 5 seconds to lure enemies away.</p>
+        <p>Survive as long as possible!</p>
         <button id="startButton">Start Game</button>
     </div>
+
     <div id="gameArea">
-        <div id="player" class="player"></div>
-        <div id="score">Score: 0</div>
-    <div id="backToIndex" style="position: absolute; top: 10px; right: 10px; font-size: 12px; color: rgba(255, 255, 255, 0.5); cursor: pointer;">
-        Back to Index
+        <div id="player"></div>
+        <div id="score">Progress: 0.00s</div>
+        <div id="milestone"></div>
+        <div id="backToIndex" style="position:absolute;top:10px;right:10px;font-size:12px;color:rgba(255,255,255,0.5);cursor:pointer;">Back to Index</div>
     </div>
+
     <script>
-        document.getElementById('backToIndex').addEventListener('click', function() {
+        document.getElementById('backToIndex').addEventListener('click', function () {
             if (confirm('Are you sure you want to leave the game?')) {
                 window.location.href = 'index.html';
             }
         });
-    </script>
-    </div>
 
-    <script>
-        const gameArea = document.getElementById('gameArea');
-        const player = document.getElementById('player');
-        const scoreDisplay = document.getElementById('score');
-        let score = 0;
-        let enemies = [];
-        let gameInterval;
-        let enemyInterval;
-        let helperInterval; // 新增变量，用于存储助手生成的定时器
-        const MAX_ENEMIES = 200; // 设置最大敌人数量
+        const gameArea         = document.getElementById('gameArea');
+        const player           = document.getElementById('player');
+        const scoreDisplay     = document.getElementById('score');
+        const milestoneDisplay = document.getElementById('milestone');
 
-        // Set initial player position
-        let playerPos = {
-            x: Math.floor(gameArea.clientWidth / 2 - player.clientWidth / 2),
-            y: Math.floor(gameArea.clientHeight / 2 - player.clientHeight / 2)
-        };
-        player.style.left = `${playerPos.x}px`;
-        player.style.top = `${playerPos.y}px`;
+        const PLAYER_SIZE = 10;
+        const MAX_ENEMIES = 200;
 
-        // Object to track key states
-        let keys = {
-            ArrowUp: false,
-            ArrowDown: false,
-            ArrowLeft: false,
-            ArrowRight: false
-        };
+        let enemies      = [];
+        let playerPos    = { x: 0, y: 0 };
+        let playerPath   = [];
+        let elapsed      = 0;   // ms since game start
+        let gameRunning  = false;
+        let rafId        = null;
+        let enemyInterval  = null;
+        let helperInterval = null;
+        let lastFrameTime  = 0;
 
-        // Add touch event variables
-        let touchStartX = 0;
-        let touchStartY = 0;
+        // Helper (decoy) state — stored as coordinates, not DOM rects
+        let helperPos     = null;  // { x, y } or null
+        let helperElement = null;
 
-        // Listen for keydown and keyup events
-        document.addEventListener('keydown', (event) => {
-            if (event.key in keys) {
-                keys[event.key] = true;
-            }
-        });
+        // Track which milestones have been announced
+        let milestoneShown = new Set();
+        let milestoneTimer = null;
 
-        document.addEventListener('keyup', (event) => {
-            if (event.key in keys) {
-                keys[event.key] = false;
-            }
-        });
+        // ── Input: keyboard ────────────────────────────────────────────
+        const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
+        document.addEventListener('keydown', e => { if (e.key in keys) { keys[e.key] = true;  e.preventDefault(); } });
+        document.addEventListener('keyup',   e => { if (e.key in keys) { keys[e.key] = false; } });
 
-        // Add touch event listeners
-        gameArea.addEventListener('touchstart', handleTouchStart, false);
-        gameArea.addEventListener('touchmove', handleTouchMove, false);
-        gameArea.addEventListener('touchend', handleTouchEnd, false);
+        // ── Input: touch — follow-finger ────────────────────────────────
+        let touchTarget = null; // { x, y } in gameArea coords
 
-        // Touch event handlers
-        function handleTouchStart(evt) {
-            const firstTouch = evt.touches[0];
-            touchStartX = firstTouch.clientX;
-            touchStartY = firstTouch.clientY;
-        }
+        gameArea.addEventListener('touchstart', e => {
+            e.preventDefault();
+            const r = gameArea.getBoundingClientRect();
+            const t = e.touches[0];
+            touchTarget = { x: t.clientX - r.left, y: t.clientY - r.top };
+        }, { passive: false });
 
-        function handleTouchMove(evt) {
-            if (!touchStartX || !touchStartY) {
-                return;
-            }
+        gameArea.addEventListener('touchmove', e => {
+            e.preventDefault();
+            const r = gameArea.getBoundingClientRect();
+            const t = e.touches[0];
+            touchTarget = { x: t.clientX - r.left, y: t.clientY - r.top };
+        }, { passive: false });
 
-            const touchEndX = evt.touches[0].clientX;
-            const touchEndY = evt.touches[0].clientY;
+        gameArea.addEventListener('touchend',   () => { touchTarget = null; });
+        gameArea.addEventListener('touchcancel',() => { touchTarget = null; });
 
-            const dx = touchEndX - touchStartX;
-            const dy = touchEndY - touchStartY;
+        // ── Player movement ─────────────────────────────────────────────
+        function movePlayer(dt) {
+            const step = 10 * (dt / 50); // speed normalised to original 50 ms tick
+            let dx = 0, dy = 0;
 
-            // Calculate angle of swipe
-            const angle = Math.atan2(dy, dx);
-
-            // Convert angle to degrees and normalize to 0-360
-            const degrees = (angle * 180 / Math.PI + 360) % 360;
-
-            // Determine direction based on angle
-            if (degrees >= 337.5 || degrees < 22.5) {
-                keys.ArrowRight = true;
-            } else if (degrees >= 22.5 && degrees < 67.5) {
-                keys.ArrowRight = true;
-                keys.ArrowDown = true;
-            } else if (degrees >= 67.5 && degrees < 112.5) {
-                keys.ArrowDown = true;
-            } else if (degrees >= 112.5 && degrees < 157.5) {
-                keys.ArrowDown = true;
-                keys.ArrowLeft = true;
-            } else if (degrees >= 157.5 && degrees < 202.5) {
-                keys.ArrowLeft = true;
-            } else if (degrees >= 202.5 && degrees < 247.5) {
-                keys.ArrowLeft = true;
-                keys.ArrowUp = true;
-            } else if (degrees >= 247.5 && degrees < 292.5) {
-                keys.ArrowUp = true;
-            } else if (degrees >= 292.5 && degrees < 337.5) {
-                keys.ArrowUp = true;
-                keys.ArrowRight = true;
+            if (touchTarget) {
+                const cx  = playerPos.x + PLAYER_SIZE / 2;
+                const cy  = playerPos.y + PLAYER_SIZE / 2;
+                const tdx = touchTarget.x - cx;
+                const tdy = touchTarget.y - cy;
+                const d   = Math.sqrt(tdx * tdx + tdy * tdy);
+                if (d > 2) { dx = (tdx / d) * step; dy = (tdy / d) * step; }
+            } else {
+                if (keys.ArrowUp)    dy -= step;
+                if (keys.ArrowDown)  dy += step;
+                if (keys.ArrowLeft)  dx -= step;
+                if (keys.ArrowRight) dx += step;
+                if (dx !== 0 && dy !== 0) { dx /= Math.SQRT2; dy /= Math.SQRT2; }
             }
 
-            // Prevent default behavior to avoid scrolling
-            evt.preventDefault();
-        }
+            const W = gameArea.clientWidth;
+            const H = gameArea.clientHeight;
+            playerPos.x = Math.max(0, Math.min(W - PLAYER_SIZE, playerPos.x + dx));
+            playerPos.y = Math.max(0, Math.min(H - PLAYER_SIZE, playerPos.y + dy));
 
-        function handleTouchEnd() {
-            // Reset all keys when touch ends
-            keys.ArrowUp = false;
-            keys.ArrowDown = false;
-            keys.ArrowLeft = false;
-            keys.ArrowRight = false;
+            player.style.left = playerPos.x + 'px';
+            player.style.top  = playerPos.y + 'px';
 
-            touchStartX = 0;
-            touchStartY = 0;
-        }
-
-        // Array to store player positions
-        let playerPath = [];
-
-        // Function to move player
-        function movePlayer() {
-            const step = 10;
-            let dx = 0;
-            let dy = 0;
-
-            if (keys.ArrowUp) dy -= step;
-            if (keys.ArrowDown) dy += step;
-            if (keys.ArrowLeft) dx -= step;
-            if (keys.ArrowRight) dx += step;
-
-            // Normalize diagonal movement
-            if (dx !== 0 && dy !== 0) {
-                dx /= Math.sqrt(2);
-                dy /= Math.sqrt(2);
-            }
-
-            playerPos.x = Math.max(0, Math.min(gameArea.clientWidth - player.clientWidth, playerPos.x + dx));
-            playerPos.y = Math.max(0, Math.min(gameArea.clientHeight - player.clientHeight, playerPos.y + dy));
-
-            player.style.left = `${playerPos.x}px`;
-            player.style.top = `${playerPos.y}px`;
-
-            // Record player position
             playerPath.push({ x: playerPos.x, y: playerPos.y });
         }
 
-        // Create randomly moving enemies
+        // ── Enemy creation ──────────────────────────────────────────────
         function createEnemy() {
-            if (enemies.length >= MAX_ENEMIES) {
-                return; // 如果敌人数量达到最大值，不再创建新敌人
-            }
-            const enemy = document.createElement('div');
-            enemy.classList.add('enemy');
-            const colors = ['#ff0000', '#800080', '#0000ff']; // Red, Purple, Blue
-            const randomNumber = Math.random();
-            const randomColor = randomNumber < 0.8 ? colors[0] : (randomNumber < 0.95 ? colors[1] : colors[2]);
-            enemy.style.backgroundColor = randomColor;
-            // Calculate the center of the game area
-            const centerX = gameArea.clientWidth / 2;
-            const centerY = gameArea.clientHeight / 2;
-            
-            // Generate a random angle
-            const angle = Math.random() * 2 * Math.PI;
-            
-            // Calculate a distance that's at least 1/4 of the game area's width or height, whichever is larger
-            const minDistance = Math.max(gameArea.clientWidth, gameArea.clientHeight) / 4;
-            const distance = minDistance + Math.random() * minDistance; // This ensures the enemy is between 1/4 and 1/2 of the max dimension away
-            
-            // Calculate the enemy's position
-            const enemyX = centerX + Math.cos(angle) * distance;
-            const enemyY = centerY + Math.sin(angle) * distance;
-            
-            // Set the enemy's position, ensuring it's within the game area
-            enemy.style.left = `${Math.max(0, Math.min(gameArea.clientWidth - 10, enemyX))}px`;
-            enemy.style.top = `${Math.max(0, Math.min(gameArea.clientHeight - 10, enemyY))}px`;
-            const enemySize = Math.random();
-            let size;
-            if (enemySize < 0.8) {
-                size = 10;
-            } else if (enemySize < 0.9) {
-                size = 20;
-            } else {
-                size = 30;
-            }
-            
-            enemy.style.width = `${size}px`;
-            enemy.style.height = `${size}px`;
-            gameArea.appendChild(enemy);
-            enemies.push({ 
-                element: enemy, 
-                xSpeed: (Math.random() - 0.5) * 6, // 增加速度范围
-                ySpeed: (Math.random() - 0.5) * 6  // 增加速度范围
+            if (enemies.length >= MAX_ENEMIES) return;
+
+            const W  = gameArea.clientWidth;
+            const H  = gameArea.clientHeight;
+            const cx = W / 2;
+            const cy = H / 2;
+
+            const angle   = Math.random() * 2 * Math.PI;
+            const minDist = Math.max(W, H) / 4;
+            const dist    = minDist + Math.random() * minDist;
+
+            const x = Math.max(0, Math.min(W - 10, cx + Math.cos(angle) * dist));
+            const y = Math.max(0, Math.min(H - 10, cy + Math.sin(angle) * dist));
+
+            const rnd   = Math.random();
+            const color = rnd < 0.8 ? '#ff0000' : (rnd < 0.95 ? '#800080' : '#0000ff');
+
+            const sRnd = Math.random();
+            const size = sRnd < 0.8 ? 10 : (sRnd < 0.9 ? 20 : 30);
+
+            const el = document.createElement('div');
+            el.className = 'enemy';
+            el.style.width           = size + 'px';
+            el.style.height          = size + 'px';
+            el.style.backgroundColor = color;
+            el.style.left            = x + 'px';
+            el.style.top             = y + 'px';
+            gameArea.appendChild(el);
+
+            enemies.push({
+                element: el,
+                x, y, size,
+                xSpeed: (Math.random() - 0.5) * 6,
+                ySpeed: (Math.random() - 0.5) * 6,
+                attractedToHelper: false
             });
         }
 
-        // Update enemy positions
-        function updateEnemies() {
-            const playerRect = player.getBoundingClientRect();
-            const currentScore = parseInt(scoreDisplay.textContent.split(':')[1].trim().split('s')[0]);
-            let fastEnemies = [];
+        // ── Enemy update — no getBoundingClientRect in hot path ─────────
+        function updateEnemies(dt) {
+            const W        = gameArea.clientWidth;
+            const H        = gameArea.clientHeight;
+            const maxDim   = Math.max(W, H);
+            const dtFactor = dt / 50;
+            const seconds  = elapsed / 1000;
+            const px       = playerPos.x;
+            const py       = playerPos.y;
 
-            if (currentScore >= 10) {
-                fastEnemies = enemies.slice(0, 2);
-            }
-            if (currentScore >= 20) {
-                fastEnemies = enemies.slice(0, 4);
-            }
-            if (currentScore >= 30) {
-                fastEnemies = enemies.slice(0, 6);
-            }
+            let fastCount = 0;
+            if (seconds >= 30) fastCount = 6;
+            else if (seconds >= 20) fastCount = 4;
+            else if (seconds >= 10) fastCount = 2;
 
-            enemies = enemies.filter((enemyObj, index) => {
-                const enemy = enemyObj.element;
-                const enemyRect = enemy.getBoundingClientRect();
-
-                // 计算敌人与玩家的距离
-                const dx = playerRect.left - enemyRect.left;
-                const dy = playerRect.top - enemyRect.top;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                // 如果敌人距离玩家太远，就移除它
-                if (distance > Math.max(gameArea.clientWidth, gameArea.clientHeight) / 2) {
-                    gameArea.removeChild(enemy);
+            enemies = enemies.filter((obj, index) => {
+                // Cull enemies that have drifted far from the player
+                const cdx  = px - obj.x;
+                const cdy  = py - obj.y;
+                if (cdx * cdx + cdy * cdy > (maxDim / 2) * (maxDim / 2)) {
+                    gameArea.removeChild(obj.element);
                     return false;
                 }
 
-                let enemyLeft = parseFloat(enemy.style.left);
-                let enemyTop = parseFloat(enemy.style.top);
-
-                // 计算朝向玩家的方向
-                let dirX = dx / distance;
-                let dirY = dy / distance;
-
-                // 更新敌人位置，增加随机性
-                let speedMultiplier = fastEnemies.includes(enemyObj) ? 5 : 1;
-                let newLeft = enemyLeft + (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * speedMultiplier;
-                let newTop = enemyTop + (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * speedMultiplier;
-
-                // 边界检查和反弹
-                if (newLeft <= 0 || newLeft >= gameArea.clientWidth - 10) {
-                    enemyObj.xSpeed = -enemyObj.xSpeed;
-                    newLeft = Math.max(0, Math.min(gameArea.clientWidth - 10, newLeft));
-                }
-                if (newTop <= 0 || newTop >= gameArea.clientHeight - 10) {
-                    enemyObj.ySpeed = -enemyObj.ySpeed;
-                    newTop = Math.max(0, Math.min(gameArea.clientHeight - 10, newTop));
+                // Choose target: helper decoy or player
+                let targetX = px, targetY = py;
+                if (obj.attractedToHelper && helperPos) {
+                    targetX = helperPos.x;
+                    targetY = helperPos.y;
                 }
 
-                enemy.style.left = `${newLeft}px`;
-                enemy.style.top = `${newTop}px`;
+                const tdx   = targetX - obj.x;
+                const tdy   = targetY - obj.y;
+                const tdist = Math.sqrt(tdx * tdx + tdy * tdy) || 1;
+                const dirX  = tdx / tdist;
+                const dirY  = tdy / tdist;
 
-                // 碰撞检测
-                if (isCollision(playerRect, enemyRect)) {
+                const speedMult = (index < fastCount) ? 5 : 1;
+                const rand      = Math.random() * 0.5 + 0.75;
+
+                obj.x += (dirX * 2 + obj.xSpeed) * rand * speedMult * dtFactor;
+                obj.y += (dirY * 2 + obj.ySpeed) * rand * speedMult * dtFactor;
+
+                // Bounce off walls
+                if (obj.x <= 0 || obj.x >= W - obj.size) {
+                    obj.xSpeed = -obj.xSpeed;
+                    obj.x = Math.max(0, Math.min(W - obj.size, obj.x));
+                }
+                if (obj.y <= 0 || obj.y >= H - obj.size) {
+                    obj.ySpeed = -obj.ySpeed;
+                    obj.y = Math.max(0, Math.min(H - obj.size, obj.y));
+                }
+
+                obj.element.style.left = obj.x + 'px';
+                obj.element.style.top  = obj.y + 'px';
+
+                // AABB collision with player
+                if (!(px + PLAYER_SIZE < obj.x || px > obj.x + obj.size ||
+                      py + PLAYER_SIZE < obj.y || py > obj.y + obj.size)) {
                     endGame();
                 }
 
@@ -401,93 +332,82 @@
             });
         }
 
-        // Collision detection
-        function isCollision(rect1, rect2) {
-            return !(
-                rect1.right < rect2.left ||
-                rect1.left > rect2.right ||
-                rect1.bottom < rect2.top ||
-                rect1.top > rect2.bottom
-            );
-        }
-
+        // ── Helper (decoy) ──────────────────────────────────────────────
         function createHelper() {
-            const helper = document.createElement('div');
-            helper.classList.add('helper');
-            helper.style.position = 'absolute';
-            helper.style.width = '20px';
-            helper.style.height = '20px';
-            helper.style.backgroundColor = '#e0e0e0'; // Gray-white color for the helper
-            helper.style.borderRadius = '50%';
-            
-            // Place helper randomly in the game area
-            helper.style.left = `${Math.random() * (gameArea.clientWidth - 20)}px`;
-            helper.style.top = `${Math.random() * (gameArea.clientHeight - 20)}px`;
-            gameArea.appendChild(helper);
+            // Remove any existing helper
+            if (helperElement && helperElement.parentNode === gameArea) {
+                gameArea.removeChild(helperElement);
+            }
 
-            // Randomly select a portion of enemies to move towards the helper
-            const attractedEnemies = enemies.filter(() => Math.random() < 0.3); // 30% chance for each enemy
+            const W  = gameArea.clientWidth;
+            const H  = gameArea.clientHeight;
+            const hx = Math.random() * (W - 20);
+            const hy = Math.random() * (H - 20);
 
-            attractedEnemies.forEach(enemyObj => {
-                enemyObj.attractedToHelper = true;
-            });
+            helperPos     = { x: hx, y: hy };
+            helperElement = document.createElement('div');
+            helperElement.style.cssText =
+                `position:absolute;width:20px;height:20px;background-color:#e0e0e0;
+                 border-radius:50%;left:${hx}px;top:${hy}px;box-shadow:0 0 8px #fff;`;
+            gameArea.appendChild(helperElement);
+
+            // Attract 30 % of enemies toward the decoy
+            enemies.forEach(obj => { obj.attractedToHelper = Math.random() < 0.3; });
 
             setTimeout(() => {
-                if (helper.parentNode === gameArea) {
-                    gameArea.removeChild(helper);
+                if (helperElement && helperElement.parentNode === gameArea) {
+                    gameArea.removeChild(helperElement);
                 }
-                // Reset attracted enemies to move towards player
-                attractedEnemies.forEach(enemyObj => {
-                    enemyObj.attractedToHelper = false;
-                });
-            }, 3000); // Helper stays for 3 seconds
-
-            // Update enemy movement logic in the main game loop
-            const updateEnemyMovement = (enemyObj) => {
-                const enemy = enemyObj.element;
-                const enemyRect = enemy.getBoundingClientRect();
-                let targetRect;
-
-                if (enemyObj.attractedToHelper) {
-                    targetRect = helper.getBoundingClientRect();
-                } else {
-                    targetRect = player.getBoundingClientRect();
-                }
-
-                const dx = targetRect.left - enemyRect.left;
-                const dy = targetRect.top - enemyRect.top;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                // Update enemy position (existing logic)
-                // ...
-
-                return true; // Keep the enemy
-            };
-
-            // Replace the existing enemy update logic with the new updateEnemyMovement function
-            enemies = enemies.filter(updateEnemyMovement);
+                helperElement = null;
+                helperPos     = null;
+                enemies.forEach(obj => { obj.attractedToHelper = false; });
+            }, 3000);
         }
 
-        // 将助手生成的定时器放入 startGame 函数中
-        function startHelperInterval() {
-            helperInterval = setInterval(createHelper, 5000); // Create a helper every 5 seconds
+        // ── Milestone flash ─────────────────────────────────────────────
+        function showMilestone(text) {
+            clearTimeout(milestoneTimer);
+            milestoneDisplay.textContent = text;
+            milestoneDisplay.style.opacity = '1';
+            milestoneTimer = setTimeout(() => { milestoneDisplay.style.opacity = '0'; }, 1800);
         }
 
-        // Function to draw player path
+        // ── Main game loop (requestAnimationFrame) ──────────────────────
+        function gameLoop(timestamp) {
+            if (!gameRunning) return;
+
+            const dt   = Math.min(timestamp - lastFrameTime, 100); // cap at 100 ms to avoid spiral of death
+            lastFrameTime = timestamp;
+            elapsed += dt;
+
+            // Update score display
+            const secs = Math.floor(elapsed / 1000);
+            const cs   = Math.floor((elapsed % 1000) / 10); // centiseconds
+            scoreDisplay.textContent = `Progress: ${secs}.${cs.toString().padStart(2, '0')}s`;
+
+            // Milestone alerts
+            if (secs >= 10 && !milestoneShown.has(10)) { milestoneShown.add(10); showMilestone('SPEED UP!'); }
+            if (secs >= 20 && !milestoneShown.has(20)) { milestoneShown.add(20); showMilestone('FASTER!'); }
+            if (secs >= 30 && !milestoneShown.has(30)) { milestoneShown.add(30); showMilestone('MAXIMUM SPEED!'); }
+
+            movePlayer(dt);
+            updateEnemies(dt);
+
+            rafId = requestAnimationFrame(gameLoop);
+        }
+
+        // ── Draw player path on game-over screen ────────────────────────
         function drawPlayerPath() {
-            const canvas = document.createElement('canvas');
-            canvas.width = gameArea.clientWidth;
+            if (playerPath.length < 2) return;
+            const canvas  = document.createElement('canvas');
+            canvas.width  = gameArea.clientWidth;
             canvas.height = gameArea.clientHeight;
-            canvas.style.position = 'absolute';
-            canvas.style.top = '0';
-            canvas.style.left = '0';
-            canvas.style.zIndex = '999'; // Ensure it's on top
+            canvas.style.cssText = 'position:absolute;top:0;left:0;z-index:999;pointer-events:none;';
             gameArea.appendChild(canvas);
 
             const ctx = canvas.getContext('2d');
-            ctx.strokeStyle = 'rgba(0, 255, 0, 1)'; // Solid green color with no transparency
-            ctx.lineWidth = 2;
-
+            ctx.strokeStyle = 'rgba(0,255,0,1)';
+            ctx.lineWidth   = 2;
             ctx.beginPath();
             ctx.moveTo(playerPath[0].x, playerPath[0].y);
             for (let i = 1; i < playerPath.length - 1; i++) {
@@ -495,200 +415,105 @@
                     x: (playerPath[i].x + playerPath[i + 1].x) / 2,
                     y: (playerPath[i].y + playerPath[i + 1].y) / 2
                 };
-                //ctx.quadraticCurveTo(playerPath[i].x, playerPath[i].y, cp.x, cp.y);
                 ctx.bezierCurveTo(playerPath[i].x, playerPath[i].y, cp.x, cp.y, playerPath[i + 1].x, playerPath[i + 1].y);
             }
             ctx.lineTo(playerPath[playerPath.length - 1].x, playerPath[playerPath.length - 1].y);
             ctx.stroke();
         }
 
-        // End game
+        // ── End game ────────────────────────────────────────────────────
         function endGame() {
-            clearInterval(gameInterval);
+            gameRunning = false;
+            cancelAnimationFrame(rafId);
             clearInterval(enemyInterval);
             clearInterval(helperInterval);
+            clearTimeout(milestoneTimer);
 
-            let finalScore = scoreDisplay.textContent.split(': ')[1];
+            const finalScore = scoreDisplay.textContent.split(': ')[1];
 
-            // Create a semi-transparent overlay
             const overlay = document.createElement('div');
-            overlay.style.position = 'absolute';
-            overlay.style.top = '0';
-            overlay.style.left = '0';
-            overlay.style.width = '100%';
-            overlay.style.height = '100%';
-            overlay.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-            overlay.style.zIndex = '1000';
+            overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;';
             document.body.appendChild(overlay);
 
-            // Create a container for game over content
-            const gameOverContainer = document.createElement('div');
-            gameOverContainer.style.position = 'absolute';
-            gameOverContainer.style.top = '50%';
-            gameOverContainer.style.left = '50%';
-            gameOverContainer.style.transform = 'translate(-50%, -50%)';
-            gameOverContainer.style.textAlign = 'center';
-            gameOverContainer.style.zIndex = '1001';
-            gameOverContainer.style.width = '80%';
-            gameOverContainer.style.maxWidth = '400px';
+            const container = document.createElement('div');
+            container.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:1001;width:80%;max-width:400px;opacity:0;';
+            container.innerHTML = `
+                <div style="color:#FF4136;font-size:36px;font-weight:bold;margin-bottom:20px;">Game Over!</div>
+                <div style="color:#fff;font-size:24px;margin-bottom:15px;">Your score: ${finalScore}</div>
+                <div style="color:#fff;font-size:24px;margin-bottom:30px;">Total steps: ${playerPath.length}</div>
+            `;
+            document.body.appendChild(container);
 
-            // Draw player path
             drawPlayerPath();
-            // Game over message
-            const gameOverMessage = document.createElement('div');
-            gameOverMessage.textContent = 'Game Over!';
-            gameOverMessage.style.color = '#FF4136';
-            gameOverMessage.style.fontSize = '36px';
-            gameOverMessage.style.fontWeight = 'bold';
-            gameOverMessage.style.marginBottom = '20px';
-            gameOverContainer.appendChild(gameOverMessage);
 
-            // Score display
-            const scoreMessage = document.createElement('div');
-            scoreMessage.textContent = `Your score: ${finalScore}`;
-            scoreMessage.style.color = '#FFFFFF';
-            scoreMessage.style.fontSize = '24px';
-            scoreMessage.style.marginBottom = '15px';
-            gameOverContainer.appendChild(scoreMessage);
-
-            // Steps display
-            const stepsMessage = document.createElement('div');
-            stepsMessage.textContent = `Total steps: ${playerPath.length}`;
-            stepsMessage.style.color = '#FFFFFF';
-            stepsMessage.style.fontSize = '24px';
-            stepsMessage.style.marginBottom = '30px';
-            gameOverContainer.appendChild(stepsMessage);
-
-            document.body.appendChild(gameOverContainer);
-
-            
-
-            // Remove existing enemies
-            enemies.forEach(enemyObj => {
-                if (enemyObj.element.parentNode === gameArea) {
-                    gameArea.removeChild(enemyObj.element);
-                }
-            });
+            // Clean up game objects
+            enemies.forEach(obj => { if (obj.element.parentNode === gameArea) gameArea.removeChild(obj.element); });
             enemies = [];
-
-            // Remove existing helpers
-            const helpers = gameArea.querySelectorAll('.helper');
-            helpers.forEach(helper => {
-                if (helper.parentNode === gameArea) {
-                    gameArea.removeChild(helper);
-                }
-            });
+            if (helperElement && helperElement.parentNode === gameArea) gameArea.removeChild(helperElement);
+            helperElement = null;
+            helperPos     = null;
 
             setTimeout(() => {
-                const restartMessage = document.createElement('div');
-                restartMessage.textContent = 'Press any key or tap to restart';
-                restartMessage.style.color = '#7FDBFF';
-                restartMessage.style.fontSize = '18px';
-                restartMessage.style.cursor = 'pointer';
-                gameOverContainer.appendChild(restartMessage);
+                const restartMsg = document.createElement('div');
+                restartMsg.textContent = 'Press any key or tap to restart';
+                restartMsg.style.cssText = 'color:#7FDBFF;font-size:18px;cursor:pointer;';
+                container.appendChild(restartMsg);
 
                 function restartGame() {
                     document.body.removeChild(overlay);
-                    document.body.removeChild(gameOverContainer);
+                    document.body.removeChild(container);
                     document.removeEventListener('keydown', restartGame);
                     document.removeEventListener('touchstart', restartGame);
                     startGame();
                 }
-
                 document.addEventListener('keydown', restartGame);
                 document.addEventListener('touchstart', restartGame);
             }, 2000);
 
-            // Add a subtle animation to the game over container
+            // Fade in game-over panel
             let opacity = 0;
             const fadeIn = setInterval(() => {
-                opacity += 0.1;
-                gameOverContainer.style.opacity = opacity;
+                opacity = Math.min(1, opacity + 0.1);
+                container.style.opacity = opacity;
                 if (opacity >= 1) clearInterval(fadeIn);
             }, 50);
         }
 
-        // Game loop
+        // ── Start / restart game ────────────────────────────────────────
         function startGame() {
-            // Clear the previously drawn player path
-            const existingCanvas = gameArea.querySelector('canvas');
-            if (existingCanvas) {
-                gameArea.removeChild(existingCanvas);
-            }
-            // Reset player position to the center
-            player.style.left = '50%';
-            player.style.top = '50%';
-            player.style.transform = 'translate(-50%, -50%)';
+            const existing = gameArea.querySelector('canvas');
+            if (existing) gameArea.removeChild(existing);
 
-            // Reset player's internal position
-            playerPos = {
-                x: gameArea.clientWidth / 2 - player.clientWidth / 2,
-                y: gameArea.clientHeight / 2 - player.clientHeight / 2
-            };
+            const W = gameArea.clientWidth;
+            const H = gameArea.clientHeight;
 
-            // Reset player position
-            player.style.left = `${playerPos.x}px`;
-            player.style.top = `${playerPos.y}px`;
+            playerPos = { x: W / 2 - PLAYER_SIZE / 2, y: H / 2 - PLAYER_SIZE / 2 };
+            player.style.left = playerPos.x + 'px';
+            player.style.top  = playerPos.y + 'px';
 
-            // Reset player path
-            playerPath = [{ x: playerPos.x, y: playerPos.y }];
+            playerPath     = [{ x: playerPos.x, y: playerPos.y }];
+            elapsed        = 0;
+            enemies        = [];
+            helperPos      = null;
+            helperElement  = null;
+            milestoneShown = new Set();
+            gameRunning    = true;
 
-            // Reset score display
-            score = 0;
-            enemies = [];
-
-            // Create initial enemies
-            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            const isMobile   = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             const enemyCount = isMobile ? 10 : 40;
-            for (let i = 0; i < enemyCount; i++) {
-                createEnemy();
-            }
+            for (let i = 0; i < enemyCount; i++) createEnemy();
 
-            let startTime = Date.now();
-            gameInterval = setInterval(() => {
-                let currentTime = Date.now();
-                let elapsedTime = currentTime - startTime;
-                let seconds = Math.floor(elapsedTime / 1000);
-                let milliseconds = elapsedTime % 1000;
-                scoreDisplay.textContent = `Progress: ${seconds}s${milliseconds.toString().padStart(3, '0')}`;
-                movePlayer();
-                updateEnemies();
-            }, 50);
+            enemyInterval  = setInterval(createEnemy, 100);
+            helperInterval = setInterval(createHelper, 5000);
 
-            // Generate new enemies at intervals
-            enemyInterval = setInterval(createEnemy, 100); // 降低敌人生成频率
-
-            // 启动助手生成的定时器
-            startHelperInterval();
+            lastFrameTime = performance.now();
+            rafId = requestAnimationFrame(gameLoop);
         }
 
-        const gameInstructions = document.getElementById('gameInstructions');
-        const startButton = document.getElementById('startButton');
-        let gameStarted = false;
-
-        startButton.addEventListener('click', () => {
-            gameInstructions.style.display = 'none';
-            gameStarted = true;
+        document.getElementById('startButton').addEventListener('click', () => {
+            document.getElementById('gameInstructions').style.display = 'none';
             startGame();
         });
     </script>
-
-<!-- <audio id="backgroundMusic" loop>
-    <source src="ken-games-bgmusic-01.mp3" type="audio/mpeg">
-    Your browser does not support the audio element.
-</audio> -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var backgroundMusic = document.getElementById('backgroundMusic');
-        if (backgroundMusic) {
-            backgroundMusic.volume = 0.5;
-            backgroundMusic.play().catch(function(error) {
-                console.log('Autoplay failed:', error);
-            });
-        }
-    });
-</script>
-
- 
 </body>
 </html>
