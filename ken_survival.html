@@ -118,6 +118,127 @@
             text-shadow: 0 0 12px #FF8C00;
             white-space: nowrap;
         }
+
+        /* ── Game-over screen ───────────────────────────────────────── */
+        @keyframes goTitlePulse {
+            0%, 100% { text-shadow: 0 0 12px #FF4136, 0 0 28px #FF4136; }
+            50%       { text-shadow: 0 0 30px #FF4136, 0 0 60px #FF4136, 0 0 90px #ff7b72; }
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(22px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes starPop {
+            0%   { transform: scale(0) rotate(-40deg); opacity: 0; }
+            65%  { transform: scale(1.45) rotate(8deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0); opacity: 1; }
+        }
+        @keyframes restartBlink {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.2; }
+        }
+        .go-panel {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1001;
+            width: 92%;
+            max-width: 430px;
+            background: linear-gradient(160deg, rgba(8,8,20,0.97) 0%, rgba(24,4,38,0.97) 100%);
+            border: 1.5px solid rgba(255,65,54,0.5);
+            border-radius: 18px;
+            padding: 28px 22px 20px;
+            text-align: center;
+            box-shadow: 0 0 60px rgba(255,65,54,0.2), 0 0 0 1px rgba(255,255,255,0.04) inset;
+        }
+        .go-title {
+            color: #FF4136;
+            font-size: 44px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            animation: goTitlePulse 1.4s ease-in-out infinite;
+            margin-bottom: 4px;
+        }
+        .go-time {
+            color: #00ff88;
+            font-size: 40px;
+            font-weight: bold;
+            font-family: monospace;
+            text-shadow: 0 0 14px #00ff88;
+            margin-bottom: 8px;
+        }
+        .go-stars {
+            font-size: 32px;
+            margin-bottom: 4px;
+            min-height: 42px;
+            letter-spacing: 4px;
+        }
+        .go-star {
+            display: inline-block;
+            opacity: 0;
+            animation: starPop 0.4s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        .go-rank {
+            color: #FFD700;
+            font-size: 13px;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+            opacity: 0;
+            animation: slideUp 0.5s ease both;
+        }
+        .go-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 9px;
+            margin-bottom: 14px;
+        }
+        .go-stat {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 11px;
+            padding: 10px 8px;
+            opacity: 0;
+            animation: slideUp 0.5s ease both;
+        }
+        .go-stat-label {
+            color: rgba(255,255,255,0.4);
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .go-stat-value {
+            color: #fff;
+            font-size: 19px;
+            font-weight: bold;
+        }
+        .go-badges {
+            display: flex;
+            justify-content: center;
+            gap: 7px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            min-height: 26px;
+        }
+        .go-badge {
+            background: linear-gradient(135deg, #FFD700, #FF8C00);
+            color: #111;
+            font-size: 11px;
+            font-weight: bold;
+            padding: 4px 11px;
+            border-radius: 20px;
+            opacity: 0;
+            animation: slideUp 0.4s ease both;
+        }
+        .go-restart {
+            color: #7FDBFF;
+            font-size: 15px;
+            cursor: pointer;
+            animation: restartBlink 1s ease-in-out infinite;
+            margin-top: 4px;
+        }
     </style>
 </head>
 <body>
@@ -169,6 +290,10 @@
         // Track which milestones have been announced
         let milestoneShown = new Set();
         let milestoneTimer = null;
+
+        // ── Per-run stats ───────────────────────────────────────────────
+        let closestCall   = Infinity; // min center-to-center px between player and any enemy
+        let enemiesDodged = 0;        // enemies culled (drifted past the player safely)
 
         // ── Input: keyboard ────────────────────────────────────────────
         const keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -282,13 +407,18 @@
             else if (seconds >= 10) fastCount = 2;
 
             enemies = enemies.filter((obj, index) => {
-                // Cull enemies that have drifted far from the player
-                const cdx  = px - obj.x;
-                const cdy  = py - obj.y;
-                if (cdx * cdx + cdy * cdy > (maxDim / 2) * (maxDim / 2)) {
+                // Distance from player (shared by cull check + stat tracking)
+                const cdx = px - obj.x;
+                const cdy = py - obj.y;
+                const cd2 = cdx * cdx + cdy * cdy;
+                if (cd2 > (maxDim / 2) * (maxDim / 2)) {
                     gameArea.removeChild(obj.element);
+                    enemiesDodged++;
                     return false;
                 }
+                // Track closest approach (center-to-center distance)
+                const cd = Math.sqrt(cd2);
+                if (cd < closestCall) closestCall = cd;
 
                 // Choose target: helper decoy or player
                 let targetX = px, targetY = py;
@@ -429,20 +559,69 @@
             clearInterval(helperInterval);
             clearTimeout(milestoneTimer);
 
-            const finalScore = scoreDisplay.textContent.split(': ')[1];
+            // Snapshot stats before any reset
+            const totalMs     = elapsed;
+            const totalSecs   = totalMs / 1000;
+            const steps       = playerPath.length;
+            const dodged      = enemiesDodged;
+            const closestPx   = closestCall === Infinity ? '—' : Math.round(closestCall) + 'px';
 
+            // Star rating
+            let stars, rank, rankColor;
+            if (totalSecs >= 21)      { stars = 5; rank = 'LEGENDARY';    rankColor = '#FF6EC7'; }
+            else if (totalSecs >= 15) { stars = 4; rank = 'IMPRESSIVE';   rankColor = '#FFD700'; }
+            else if (totalSecs >= 10) { stars = 3; rank = 'NOT BAD';      rankColor = '#00CFFF'; }
+            else if (totalSecs >= 5)  { stars = 2; rank = 'KEEP GOING';   rankColor = '#aaa'; }
+            else                      { stars = 1; rank = 'JUST STARTED'; rankColor = '#888'; }
+
+            // Closest-call label
+            let callLabel;
+            const cpx = closestCall === Infinity ? 999 : closestCall;
+            if (cpx < 15)      callLabel = "Hair's breadth!";
+            else if (cpx < 30) callLabel = 'Close shave!';
+            else if (cpx < 60) callLabel = 'Careful!';
+            else               callLabel = 'Comfortable';
+
+            // Milestones reached badges
+            const badgeHTML = [10, 20, 30]
+                .filter(s => milestoneShown.has(s))
+                .map((s, i) => `<span class="go-badge" style="animation-delay:${1.4 + i * 0.12}s">${s}s SURVIVED</span>`)
+                .join('');
+
+            // Overlay
             const overlay = document.createElement('div');
-            overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);z-index:1000;';
+            overlay.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:1000;';
             document.body.appendChild(overlay);
 
-            const container = document.createElement('div');
-            container.style.cssText = 'position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:1001;width:80%;max-width:400px;opacity:0;';
-            container.innerHTML = `
-                <div style="color:#FF4136;font-size:36px;font-weight:bold;margin-bottom:20px;">Game Over!</div>
-                <div style="color:#fff;font-size:24px;margin-bottom:15px;">Your score: ${finalScore}</div>
-                <div style="color:#fff;font-size:24px;margin-bottom:30px;">Total steps: ${playerPath.length}</div>
+            // Panel
+            const panel = document.createElement('div');
+            panel.className = 'go-panel';
+            panel.innerHTML = `
+                <div class="go-title">GAME OVER</div>
+                <div class="go-time" id="goTimeCounter">0.00s</div>
+                <div class="go-stars" id="goStars"></div>
+                <div class="go-rank" id="goRank" style="color:${rankColor};animation-delay:0.9s">${rank}</div>
+                <div class="go-stats">
+                    <div class="go-stat" style="animation-delay:1.0s">
+                        <div class="go-stat-label">Steps taken</div>
+                        <div class="go-stat-value">${steps.toLocaleString()}</div>
+                    </div>
+                    <div class="go-stat" style="animation-delay:1.1s">
+                        <div class="go-stat-label">Enemies dodged</div>
+                        <div class="go-stat-value">${dodged}</div>
+                    </div>
+                    <div class="go-stat" style="animation-delay:1.2s">
+                        <div class="go-stat-label">Closest call</div>
+                        <div class="go-stat-value">${closestPx}</div>
+                    </div>
+                    <div class="go-stat" style="animation-delay:1.3s">
+                        <div class="go-stat-label">Proximity</div>
+                        <div class="go-stat-value" style="font-size:13px;padding-top:3px">${callLabel}</div>
+                    </div>
+                </div>
+                <div class="go-badges">${badgeHTML}</div>
             `;
-            document.body.appendChild(container);
+            document.body.appendChild(panel);
 
             drawPlayerPath();
 
@@ -453,30 +632,48 @@
             helperElement = null;
             helperPos     = null;
 
+            // Animated time counter (counts up from 0 to final time over 1.3s)
+            const timeEl    = document.getElementById('goTimeCounter');
+            const countStart = performance.now();
+            const countDur   = 1300;
+            const counterRaf = (now) => {
+                const p  = Math.min((now - countStart) / countDur, 1);
+                const ms = Math.round(totalMs * p);
+                const s  = Math.floor(ms / 1000);
+                const cs = Math.floor((ms % 1000) / 10);
+                timeEl.textContent = `${s}.${cs.toString().padStart(2, '0')}s`;
+                if (p < 1) requestAnimationFrame(counterRaf);
+            };
+            requestAnimationFrame(counterRaf);
+
+            // Stars pop in one by one after counter finishes
+            const starsEl = document.getElementById('goStars');
+            for (let i = 0; i < 5; i++) {
+                const star = document.createElement('span');
+                star.className = 'go-star';
+                star.textContent = i < stars ? '★' : '☆';
+                star.style.color = i < stars ? '#FFD700' : 'rgba(255,255,255,0.15)';
+                star.style.animationDelay = (1.0 + i * 0.12) + 's';
+                starsEl.appendChild(star);
+            }
+
+            // Restart prompt after 2.5s
             setTimeout(() => {
                 const restartMsg = document.createElement('div');
+                restartMsg.className = 'go-restart';
                 restartMsg.textContent = 'Press any key or tap to restart';
-                restartMsg.style.cssText = 'color:#7FDBFF;font-size:18px;cursor:pointer;';
-                container.appendChild(restartMsg);
+                panel.appendChild(restartMsg);
 
                 function restartGame() {
                     document.body.removeChild(overlay);
-                    document.body.removeChild(container);
+                    document.body.removeChild(panel);
                     document.removeEventListener('keydown', restartGame);
                     document.removeEventListener('touchstart', restartGame);
                     startGame();
                 }
                 document.addEventListener('keydown', restartGame);
                 document.addEventListener('touchstart', restartGame);
-            }, 2000);
-
-            // Fade in game-over panel
-            let opacity = 0;
-            const fadeIn = setInterval(() => {
-                opacity = Math.min(1, opacity + 0.1);
-                container.style.opacity = opacity;
-                if (opacity >= 1) clearInterval(fadeIn);
-            }, 50);
+            }, 2500);
         }
 
         // ── Start / restart game ────────────────────────────────────────
@@ -497,6 +694,8 @@
             helperPos      = null;
             helperElement  = null;
             milestoneShown = new Set();
+            closestCall    = Infinity;
+            enemiesDodged  = 0;
             gameRunning    = true;
 
             const isMobile   = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
