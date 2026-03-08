@@ -996,33 +996,71 @@ function playGameOverSound() {
     const now = audioCtx.currentTime;
     const out  = audioCtx.destination;
 
-    // soft descending Am chord — three sine notes fading out slowly
-    [[220, 0], [261.63, 0.08], [329.63, 0.16]].forEach(([freq, delay]) => {
+    // Warm reverb-like tail: convolver simulation via two delayed echoes
+    function warmNote(freq, startTime, duration, peakVol, pitchDrop) {
+        const osc  = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator(); // slight detune for warmth
+        const filt = audioCtx.createBiquadFilter();
+        const g    = audioCtx.createGain();
+
+        osc.type  = 'triangle';
+        osc2.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, startTime);
+        osc2.frequency.setValueAtTime(freq * 1.004, startTime); // subtle chorus
+        if (pitchDrop) {
+            osc.frequency.linearRampToValueAtTime(freq * pitchDrop, startTime + duration);
+            osc2.frequency.linearRampToValueAtTime(freq * 1.004 * pitchDrop, startTime + duration);
+        }
+
+        filt.type = 'lowpass';
+        filt.frequency.setValueAtTime(1800, startTime);
+        filt.frequency.linearRampToValueAtTime(600, startTime + duration * 0.6);
+
+        g.gain.setValueAtTime(0, startTime);
+        g.gain.linearRampToValueAtTime(peakVol, startTime + 0.06);
+        g.gain.setValueAtTime(peakVol, startTime + duration * 0.3);
+        g.gain.exponentialRampToValueAtTime(0.001, startTime + duration + 0.5);
+
+        osc.connect(filt);  osc2.connect(filt);
+        filt.connect(g);    g.connect(out);
+
+        osc.start(startTime);  osc.stop(startTime + duration + 0.6);
+        osc2.start(startTime); osc2.stop(startTime + duration + 0.6);
+    }
+
+    // Bittersweet descending melody: C5 → Bb4 → Ab4 → G4
+    // Sounds musical and warm, but the minor descent feels gently disappointing
+    const melody = [
+        { freq: 523.25, t: 0.0,  dur: 0.55, vol: 0.10, drop: 0.99 },
+        { freq: 466.16, t: 0.42, dur: 0.55, vol: 0.10, drop: 0.98 },
+        { freq: 415.30, t: 0.84, dur: 0.55, vol: 0.09, drop: 0.97 },
+        { freq: 392.00, t: 1.28, dur: 1.20, vol: 0.09, drop: 0.94 }, // long final note droops
+    ];
+    melody.forEach(n => warmNote(n.freq, now + n.t, n.dur, n.vol, n.drop));
+
+    // Soft harmony pad underneath (Am-ish chord: A3 + E4)
+    [[220, 0.1, 2.4], [329.63, 0.08, 2.0]].forEach(([freq, vol, dur]) => {
         const osc = audioCtx.createOscillator();
         const g   = audioCtx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(freq, now + delay);
-        osc.frequency.linearRampToValueAtTime(freq * 0.96, now + delay + 2.5);
-        g.gain.setValueAtTime(0, now + delay);
-        g.gain.linearRampToValueAtTime(0.12, now + delay + 0.15);
-        g.gain.exponentialRampToValueAtTime(0.001, now + delay + 2.8);
+        osc.type  = 'sine';
+        osc.frequency.value = freq;
+        g.gain.setValueAtTime(0, now + 0.1);
+        g.gain.linearRampToValueAtTime(vol, now + 0.5);
+        g.gain.exponentialRampToValueAtTime(0.001, now + dur);
         osc.connect(g); g.connect(out);
-        osc.start(now + delay); osc.stop(now + delay + 3);
+        osc.start(now + 0.1); osc.stop(now + dur + 0.1);
     });
 
-    // very soft low rumble — sine sweep down
-    const rumble = audioCtx.createOscillator();
-    const rumbleG = audioCtx.createGain();
-    const rumbleF = audioCtx.createBiquadFilter();
-    rumble.type = 'sine';
-    rumble.frequency.setValueAtTime(80, now);
-    rumble.frequency.exponentialRampToValueAtTime(35, now + 2.2);
-    rumbleF.type = 'lowpass'; rumbleF.frequency.value = 200;
-    rumbleG.gain.setValueAtTime(0, now);
-    rumbleG.gain.linearRampToValueAtTime(0.09, now + 0.1);
-    rumbleG.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
-    rumble.connect(rumbleF); rumbleF.connect(rumbleG); rumbleG.connect(out);
-    rumble.start(now); rumble.stop(now + 2.5);
+    // Gentle soft thud at the start (muffled kick feel)
+    const kick = audioCtx.createOscillator();
+    const kickG = audioCtx.createGain();
+    kick.type = 'sine';
+    kick.frequency.setValueAtTime(120, now);
+    kick.frequency.exponentialRampToValueAtTime(40, now + 0.18);
+    kickG.gain.setValueAtTime(0.18, now);
+    kickG.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+    kick.connect(kickG); kickG.connect(out);
+    kick.start(now); kick.stop(now + 0.25);
 }
 
 
