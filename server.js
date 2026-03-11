@@ -28,6 +28,8 @@ db.exec(`
 
 // Safe migration: add country column to existing DBs
 try { db.exec(`ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''`); } catch (_) {}
+// Safe migration: add email column
+try { db.exec(`ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''`); } catch (_) {}
 
 app.use(express.json());
 app.use(session({
@@ -45,17 +47,22 @@ function requireAuth(req, res, next) {
 
 // Register
 app.post('/api/auth/register', async (req, res) => {
-  const { username, password, country } = req.body;
+  const { username, password, country, email } = req.body;
   const name = username?.trim();
   if (!name || !password) return res.status(400).json({ error: 'Username and password required' });
   if (name.length < 2 || name.length > 20) return res.status(400).json({ error: 'Username must be 2–20 characters' });
-  if (password.length < 4) return res.status(400).json({ error: 'Password must be at least 4 characters' });
+  if (!/^[a-zA-Z0-9_]+$/.test(name)) return res.status(400).json({ error: 'Username: letters, numbers, underscore only' });
+  if (password.length < 6) return res.status(400).json({ error: 'Password must be at least 6 characters' });
+  if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) return res.status(400).json({ error: 'Password must include both letters and numbers' });
+
+  const emailVal = (email || '').trim();
+  if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) return res.status(400).json({ error: 'Invalid email format' });
 
   const countryCode = /^[A-Z]{2}$/.test((country || '').toUpperCase()) ? country.toUpperCase() : '';
 
   try {
     const hash = await bcrypt.hash(password, 10);
-    const result = db.prepare('INSERT INTO users (username, password_hash, country) VALUES (?, ?, ?)').run(name, hash, countryCode);
+    const result = db.prepare('INSERT INTO users (username, password_hash, country, email) VALUES (?, ?, ?, ?)').run(name, hash, countryCode, emailVal);
     req.session.userId = result.lastInsertRowid;
     req.session.username = name;
     req.session.country  = countryCode;

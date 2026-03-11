@@ -155,6 +155,101 @@ function showStory() {
     document.addEventListener('keydown', onKey);
 }
 
+// ===== PASSWORD STRENGTH =====
+function getPasswordStrength(pw) {
+    let score = 0;
+    if (pw.length >= 6) score++;
+    if (pw.length >= 10) score++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) score++;
+    if (/[0-9]/.test(pw)) score++;
+    if (/[^a-zA-Z0-9]/.test(pw)) score++;
+    if (score <= 1) return { level: 0, label: 'Weak', color: '#ff4444' };
+    if (score <= 2) return { level: 1, label: 'Fair', color: '#ffaa00' };
+    if (score <= 3) return { level: 2, label: 'Good', color: '#00cc66' };
+    return { level: 3, label: 'Strong', color: '#00ff88' };
+}
+
+function updateStrengthBar() {
+    const pw = document.getElementById('authPassword').value;
+    const bar = document.getElementById('strengthBar');
+    const fill = document.getElementById('strengthFill');
+    const label = document.getElementById('strengthLabel');
+    if (authMode !== 'register' || !pw) {
+        fill.style.width = '0%';
+        label.textContent = '';
+        return;
+    }
+    const s = getPasswordStrength(pw);
+    const pct = [20, 45, 75, 100][s.level];
+    fill.style.width = pct + '%';
+    fill.style.background = s.color;
+    label.textContent = s.label;
+    label.style.color = s.color;
+}
+
+document.getElementById('authPassword').addEventListener('input', () => {
+    updateStrengthBar();
+    if (authMode === 'register') validateConfirmPassword();
+});
+
+// ===== SHOW/HIDE PASSWORD =====
+document.getElementById('pwToggle').addEventListener('click', () => {
+    const pwInput = document.getElementById('authPassword');
+    const btn = document.getElementById('pwToggle');
+    const showing = pwInput.type === 'text';
+    pwInput.type = showing ? 'password' : 'text';
+    btn.classList.toggle('showing', !showing);
+});
+
+// ===== CONFIRM PASSWORD =====
+function validateConfirmPassword() {
+    if (authMode !== 'register') return true;
+    const pw = document.getElementById('authPassword').value;
+    const cpw = document.getElementById('authConfirmPassword').value;
+    const hint = document.getElementById('confirmHint');
+    const input = document.getElementById('authConfirmPassword');
+    if (!cpw) { hint.textContent = ''; hint.className = 'input-hint'; input.classList.remove('input-error', 'input-valid'); return false; }
+    if (pw !== cpw) {
+        hint.textContent = 'Passwords do not match';
+        hint.className = 'input-hint error';
+        input.classList.add('input-error');
+        input.classList.remove('input-valid');
+        return false;
+    }
+    hint.textContent = 'Passwords match';
+    hint.className = 'input-hint success';
+    input.classList.remove('input-error');
+    input.classList.add('input-valid');
+    return true;
+}
+document.getElementById('authConfirmPassword').addEventListener('input', validateConfirmPassword);
+
+// ===== USERNAME VALIDATION =====
+document.getElementById('authUsername').addEventListener('input', () => {
+    if (authMode !== 'register') return;
+    const val = document.getElementById('authUsername').value;
+    const hint = document.getElementById('usernameHint');
+    const input = document.getElementById('authUsername');
+    if (!val) { hint.textContent = ''; hint.className = 'input-hint'; input.classList.remove('input-error', 'input-valid'); return; }
+    if (val.length < 2) {
+        hint.textContent = 'At least 2 characters';
+        hint.className = 'input-hint error';
+        input.classList.add('input-error');
+        input.classList.remove('input-valid');
+    } else if (!/^[a-zA-Z0-9_]+$/.test(val)) {
+        hint.textContent = 'Letters, numbers, underscore only';
+        hint.className = 'input-hint error';
+        input.classList.add('input-error');
+        input.classList.remove('input-valid');
+    } else {
+        hint.textContent = '';
+        hint.className = 'input-hint';
+        input.classList.remove('input-error');
+        input.classList.add('input-valid');
+    }
+});
+
+// ===== AUTH SUBMIT =====
 document.getElementById('authSubmit').addEventListener('click', async () => {
     const username = document.getElementById('authUsername').value.trim();
     const password = document.getElementById('authPassword').value;
@@ -163,13 +258,24 @@ document.getElementById('authSubmit').addEventListener('click', async () => {
 
     if (!username || !password) { errorEl.textContent = 'Please fill in all fields'; return; }
 
+    if (authMode === 'register') {
+        if (username.length < 2 || username.length > 20) { errorEl.textContent = 'Username must be 2–20 characters'; return; }
+        if (!/^[a-zA-Z0-9_]+$/.test(username)) { errorEl.textContent = 'Username: letters, numbers, underscore only'; return; }
+        if (password.length < 6) { errorEl.textContent = 'Password must be at least 6 characters'; return; }
+        if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) { errorEl.textContent = 'Password needs both letters and numbers'; return; }
+        if (!validateConfirmPassword()) { errorEl.textContent = 'Passwords do not match'; return; }
+    }
+
     submitBtn.disabled = true;
     submitBtn.classList.add('loading');
     errorEl.textContent = '';
 
     const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
     const body = { username, password };
-    if (authMode === 'register') body.country = document.getElementById('authCountry').value;
+    if (authMode === 'register') {
+        body.country = document.getElementById('authCountry').value;
+        body.email = document.getElementById('authEmail').value.trim();
+    }
 
     try {
         const res = await fetch(endpoint, {
@@ -189,6 +295,22 @@ document.getElementById('authSubmit').addEventListener('click', async () => {
     }
 });
 
+// ===== TOGGLE LOGIN / REGISTER =====
+function setRegisterFields(show) {
+    const fields = ['emailGroup', 'confirmGroup', 'countryGroup'];
+    fields.forEach(id => {
+        const el = document.getElementById(id);
+        if (show) { el.classList.remove('field-hidden'); el.style.display = ''; }
+        else { el.classList.add('field-hidden'); }
+    });
+    const bar = document.getElementById('strengthBar');
+    if (show) { bar.classList.remove('field-hidden'); bar.style.display = ''; }
+    else { bar.classList.add('field-hidden'); }
+}
+
+// Initialize hidden state
+setRegisterFields(false);
+
 document.getElementById('authToggleBtn').addEventListener('click', () => {
     authMode = authMode === 'login' ? 'register' : 'login';
     const isReg = authMode === 'register';
@@ -196,14 +318,32 @@ document.getElementById('authToggleBtn').addEventListener('click', () => {
     document.getElementById('authSubmit').textContent    = isReg ? 'Create Account' : 'Sign In';
     document.getElementById('authToggleBtn').textContent =
         isReg ? 'Already have an account? Sign in' : 'New here? Create an account';
-    document.getElementById('countryGroup').style.display = isReg ? 'block' : 'none';
+    setRegisterFields(isReg);
     document.getElementById('authError').textContent = '';
+    // Clear validation states
+    document.getElementById('usernameHint').textContent = '';
+    document.getElementById('confirmHint').textContent = '';
+    document.getElementById('authUsername').classList.remove('input-error', 'input-valid');
+    document.getElementById('authConfirmPassword').classList.remove('input-error', 'input-valid');
+    updateStrengthBar();
 });
 
 document.getElementById('authUsername').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        if (authMode === 'register') document.getElementById('authEmail').focus();
+        else document.getElementById('authPassword').focus();
+    }
+});
+document.getElementById('authEmail').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('authPassword').focus();
 });
 document.getElementById('authPassword').addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        if (authMode === 'register') document.getElementById('authConfirmPassword').focus();
+        else document.getElementById('authSubmit').click();
+    }
+});
+document.getElementById('authConfirmPassword').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('authSubmit').click();
 });
 
