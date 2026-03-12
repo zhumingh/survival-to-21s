@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Survival to 21s — World-Class Optimization Plan</title>
+<style>
+  @page { margin: 48px 56px; size: A4; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+    color: #1a1a2e;
+    font-size: 11px;
+    line-height: 1.55;
+    background: #fff;
+    padding: 48px 56px;
+  }
+
+  /* Cover */
+  .cover {
+    page-break-after: always;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    height: 90vh;
+    text-align: center;
+  }
+  .cover-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #06060f, #0a1a0f);
+    color: #00e664;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 8px 24px;
+    border-radius: 20px;
+    margin-bottom: 28px;
+  }
+  .cover h1 {
+    font-size: 36px;
+    font-weight: 900;
+    color: #06060f;
+    letter-spacing: -0.5px;
+    margin-bottom: 12px;
+  }
+  .cover h1 span { color: #00c853; }
+  .cover .subtitle {
+    font-size: 16px;
+    color: #666;
+    margin-bottom: 40px;
+  }
+  .cover .meta {
+    font-size: 12px;
+    color: #999;
+    line-height: 1.8;
+  }
+  .cover .meta strong { color: #444; }
+
+  /* Headings */
+  h2 {
+    font-size: 18px;
+    font-weight: 800;
+    color: #06060f;
+    margin: 28px 0 6px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid #00c853;
+    letter-spacing: 0.5px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    margin: 16px 0 6px;
+    page-break-after: avoid;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 16px;
+    font-size: 10.5px;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #06060f;
+    color: #fff;
+    font-weight: 600;
+    text-align: left;
+    padding: 7px 10px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+  th:first-child { border-radius: 6px 0 0 0; }
+  th:last-child { border-radius: 0 6px 0 0; }
+  td {
+    padding: 7px 10px;
+    border-bottom: 1px solid #eee;
+    vertical-align: top;
+  }
+  tr:nth-child(even) td { background: #f8faf8; }
+  .tag-critical {
+    display: inline-block;
+    background: #ff4136;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+    letter-spacing: 0.3px;
+  }
+  .tag-high {
+    display: inline-block;
+    background: #ff851b;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .tag-medium {
+    display: inline-block;
+    background: #0074d9;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .tag-game {
+    display: inline-block;
+    background: #b10dc9;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+  .tag-revenue {
+    display: inline-block;
+    background: #2ecc40;
+    color: #fff;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 3px;
+  }
+
+  /* Sprint plan */
+  .sprint-box {
+    background: #f4f7f4;
+    border-left: 4px solid #00c853;
+    padding: 10px 14px;
+    margin: 6px 0;
+    border-radius: 0 6px 6px 0;
+    page-break-inside: avoid;
+  }
+  .sprint-box strong {
+    color: #00873a;
+    font-size: 11px;
+  }
+  .sprint-box span {
+    color: #555;
+    font-size: 10.5px;
+  }
+
+  /* Insights */
+  .insight {
+    background: linear-gradient(135deg, #06060f, #0a1a0f);
+    color: #ddd;
+    padding: 16px 18px;
+    border-radius: 10px;
+    margin: 14px 0;
+    page-break-inside: avoid;
+  }
+  .insight strong { color: #00e664; }
+  .insight em { color: #7fdbff; font-style: normal; }
+
+  /* Key principles */
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin: 10px 0 16px;
+  }
+  .principle {
+    background: #f8f9fa;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    page-break-inside: avoid;
+  }
+  .principle .label {
+    font-weight: 700;
+    font-size: 11px;
+    color: #00873a;
+    margin-bottom: 3px;
+  }
+  .principle .desc {
+    font-size: 10px;
+    color: #555;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 32px;
+    padding-top: 14px;
+    border-top: 1px solid #ddd;
+    font-size: 9px;
+    color: #aaa;
+    text-align: center;
+  }
+
+  p { margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<!-- COVER PAGE -->
+<div class="cover">
+  <div class="cover-badge">KenPlay.Fun</div>
+  <h1>Survival <span>to 21s</span></h1>
+  <div class="subtitle">World-Class Optimization Plan</div>
+  <div class="meta">
+    <strong>Prepared by</strong> Claude Code (Opus 4.6)<br>
+    <strong>For</strong> Ken Zhu (zhumingh@gmail.com)<br>
+    <strong>Date</strong> March 11, 2026<br>
+    <strong>Version</strong> 1.0
+  </div>
+</div>
+
+<!-- RESEARCH INSIGHTS -->
+<h2>Research Insights: What Makes Browser Games Go Viral</h2>
+
+<div class="insight">
+  <strong>The .io Formula</strong> (Agar.io → 100M+ players, ZombsRoyale.io → 120M+ players):<br>
+  <em>One-click start</em> → <em>One core mechanic</em> → <em>Real-time leaderboard</em> → <em>Permadeath + instant restart</em> → <em>Emergent social dynamics</em>
+</div>
+
+<div class="principles">
+  <div class="principle">
+    <div class="label">Compulsion Loop</div>
+    <div class="desc">Anticipation → Action → Reward → Repeat. Short cycle times trigger dopamine. Players who die should be back in-game within 1 second.</div>
+  </div>
+  <div class="principle">
+    <div class="label">Easy to Learn, Hard to Master</div>
+    <div class="desc">Agar.io is "move mouse, eat dots" — but mastery requires deep strategy. Skill ceiling keeps players engaged long after they learn basics.</div>
+  </div>
+  <div class="principle">
+    <div class="label">Viral by Design</div>
+    <div class="desc">Slither.io unlocked cosmetic skins by sharing the game link. Zero marketing budget, every player became a marketer.</div>
+  </div>
+  <div class="principle">
+    <div class="label">Juice = Feel</div>
+    <div class="desc">Screen shake, particles, squash-and-stretch, sound effects. High visual value for low performance cost. Polish amplifies strong mechanics.</div>
+  </div>
+</div>
+
+<!-- PHASE 1 -->
+<h2>Phase 1: Core Game Feel ("Juice")</h2>
+<h3>Make every second of gameplay feel satisfying</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>1.1</td><td><strong>Screen shake</strong> on near-miss (50–150ms, subtle easing)</td><td><span class="tag-high">High</span></td><td>Low</td></tr>
+  <tr><td>1.2</td><td><strong>Particle effects</strong> — explosion on death, trail while dashing, sparks on near-miss</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>1.3</td><td><strong>Enemy cull animation</strong> — pop/fade when enemies are removed from play</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+  <tr><td>1.4</td><td><strong>Player squash-and-stretch</strong> on direction change and dash</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+  <tr><td>1.5</td><td><strong>Progressive background tension</strong> — color/grid shifts as time increases (calm → red tint)</td><td><span class="tag-high">High</span></td><td>Low</td></tr>
+  <tr><td>1.6</td><td><strong>Sound effects</strong> — whoosh on dash, heartbeat at &gt;15s, ding on near-miss</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>1.7</td><td><strong>Camera zoom</strong> — slight zoom-in as difficulty ramps up</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+  <tr><td>1.8</td><td><strong>Canvas 2D renderer</strong> — replace DOM-based enemies with canvas (supports 200+ entities at 60fps)</td><td><span class="tag-critical">Critical</span></td><td>High</td></tr>
+</table>
+
+<!-- PHASE 2 -->
+<h2>Phase 2: Addictive Loop &amp; Progression</h2>
+<h3>"Just one more round" — the psychology of retention</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>2.1</td><td><strong>Instant restart</strong> — skip game-over panel with single tap/key, show stats as brief overlay</td><td><span class="tag-critical">Critical</span></td><td>Low</td></tr>
+  <tr><td>2.2</td><td><strong>Personal best ghost line</strong> — show your previous best path as a faint trail during gameplay</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>2.3</td><td><strong>Daily challenges</strong> — "Survive 15s without dashing", "Dodge 100 enemies in one run"</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>2.4</td><td><strong>Achievement / badge system</strong> — unlock titles: "Speed Demon", "Untouchable", "21s Club"</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>2.5</td><td><strong>XP &amp; level system</strong> — cumulative XP across all runs, visible rank/level beside username</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>2.6</td><td><strong>Unlockable player skins</strong> — different colors, shapes, and trails earned by milestones</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>2.7</td><td><strong>Streak counter</strong> — "3 games in a row above 10s" with bonus XP rewards</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+  <tr><td>2.8</td><td><strong>Weekly leaderboard reset</strong> — keeps competition fresh; archive all-time board separately</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+</table>
+
+<!-- PHASE 3 -->
+<h2>Phase 3: Social &amp; Viral Features</h2>
+<h3>Turn every player into a marketer</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>3.1</td><td><strong>One-click share</strong> — "I survived 18.5s! Can you beat me?" with auto-generated link + image card</td><td><span class="tag-critical">Critical</span></td><td>Medium</td></tr>
+  <tr><td>3.2</td><td><strong>Dynamic OG meta image</strong> — server-generated share card showing score, rank, and path trace</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>3.3</td><td><strong>Challenge a friend</strong> — generate a URL with your score embedded; friend tries to beat it</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>3.4</td><td><strong>Spectator / replay mode</strong> — watch the top leaderboard runs as replays</td><td><span class="tag-medium">Medium</span></td><td>High</td></tr>
+  <tr><td>3.5</td><td><strong>Unlock skins by sharing</strong> — Slither.io's proven viral trick; share link → free skin</td><td><span class="tag-high">High</span></td><td>Low</td></tr>
+  <tr><td>3.6</td><td><strong>Clan / team system</strong> — create a team, combined leaderboard for team averages</td><td><span class="tag-medium">Medium</span></td><td>High</td></tr>
+  <tr><td>3.7</td><td><strong>"Currently playing" counter</strong> — show live player count on lobby for social proof</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+</table>
+
+<!-- PHASE 4 -->
+<h2>Phase 4: Visual &amp; Audio Polish</h2>
+<h3>Stand out from every other mini game</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>4.1</td><td><strong>Theme system</strong> — Dark, Neon, Retro, Matrix themes (unlockable via achievements)</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>4.2</td><td><strong>Dynamic music layers</strong> — add instruments as time progresses (0–5s calm, 10s+ drums, 15s+ intense)</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>4.3</td><td><strong>Enemy variety</strong> — pulsing, spinning, splitting, homing enemy types with distinct visuals</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>4.4</td><td><strong>Power-ups</strong> — shield (1-hit protection), slow-mo (2s), magnet (repels nearby enemies)</td><td><span class="tag-high">High</span></td><td>High</td></tr>
+  <tr><td>4.5</td><td><strong>Arena hazards</strong> — shrinking safe zone, laser walls, gravity wells appearing after 15s</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>4.6</td><td><strong>Death replay</strong> — 3-second slow-motion replay of the exact moment you died</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>4.7</td><td><strong>Combo system</strong> — near-misses within 1s of each other build a combo multiplier for XP</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+</table>
+
+<!-- PHASE 5 -->
+<h2>Phase 5: Technical Performance</h2>
+<h3>Buttery smooth on every device</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>5.1</td><td><strong>Canvas 2D renderer</strong> — draw all game entities on canvas instead of DOM manipulation</td><td><span class="tag-critical">Critical</span></td><td>High</td></tr>
+  <tr><td>5.2</td><td><strong>Object pooling</strong> — pre-allocate enemy objects; reuse instead of create/destroy (eliminates GC pauses)</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>5.3</td><td><strong>requestAnimationFrame</strong> — replace setInterval with rAF for V-sync aligned rendering</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>5.4</td><td><strong>Delta-time movement</strong> — frame-rate independent physics so speed is consistent across devices</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+  <tr><td>5.5</td><td><strong>Spatial partitioning</strong> — grid-based collision detection instead of O(n) enemy iteration</td><td><span class="tag-medium">Medium</span></td><td>Medium</td></tr>
+  <tr><td>5.6</td><td><strong>PWA support</strong> — service worker, manifest.json; installable on mobile, works offline</td><td><span class="tag-medium">Medium</span></td><td>Medium</td></tr>
+  <tr><td>5.7</td><td><strong>Touch gesture improvements</strong> — swipe-to-dash, haptic feedback on supported devices</td><td><span class="tag-medium">Medium</span></td><td>Low</td></tr>
+</table>
+
+<!-- PHASE 6 -->
+<h2>Phase 6: Multiplayer (Long-term)</h2>
+<h3>The ultimate engagement driver</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>6.1</td><td><strong>Real-time multiplayer arena</strong> — 10–20 players dodge the same enemies simultaneously</td><td><span class="tag-game">Game-changing</span></td><td>Very High</td></tr>
+  <tr><td>6.2</td><td><strong>Last one standing mode</strong> — players see each other; last survivor wins the round</td><td><span class="tag-game">Game-changing</span></td><td>Very High</td></tr>
+  <tr><td>6.3</td><td><strong>WebSocket server</strong> — real-time state synchronization with client-side prediction</td><td><span class="tag-critical">Critical</span> for MP</td><td>High</td></tr>
+  <tr><td>6.4</td><td><strong>Spectate after death</strong> — eliminated players watch remaining survivors</td><td><span class="tag-high">High</span></td><td>Medium</td></tr>
+</table>
+
+<!-- PHASE 7 -->
+<h2>Phase 7: Monetization (Non-intrusive)</h2>
+<h3>Sustainable revenue without ruining gameplay</h3>
+
+<table>
+  <tr><th>#</th><th>Feature</th><th>Impact</th><th>Effort</th></tr>
+  <tr><td>7.1</td><td><strong>Cosmetic shop</strong> — skins, trails, death effects at $0.99–$2.99 price points</td><td><span class="tag-revenue">Revenue</span></td><td>Medium</td></tr>
+  <tr><td>7.2</td><td><strong>Rewarded video ads</strong> — watch ad to unlock a premium skin for 24 hours</td><td><span class="tag-revenue">Revenue</span></td><td>Low</td></tr>
+  <tr><td>7.3</td><td><strong>Interstitial ads</strong> — between rounds only, never during gameplay; A/B test placement</td><td><span class="tag-revenue">Revenue</span></td><td>Low</td></tr>
+  <tr><td>7.4</td><td><strong>Season pass</strong> — monthly themed challenges + exclusive skins + bonus XP</td><td><span class="tag-revenue">Revenue</span></td><td>Medium</td></tr>
+</table>
+
+<!-- EXECUTION TIMELINE -->
+<h2>Recommended Execution Timeline</h2>
+
+<div class="sprint-box"><strong>Sprint 1 (Week 1–2):</strong> <span>1.8, 5.1, 5.3, 5.4 — Canvas renderer + proper game loop foundation</span></div>
+<div class="sprint-box"><strong>Sprint 2 (Week 3):</strong> <span>1.1–1.6 — Game feel / juice (screen shake, particles, SFX)</span></div>
+<div class="sprint-box"><strong>Sprint 3 (Week 4):</strong> <span>2.1, 2.2, 2.7 — Addictive loop (instant restart, ghost line, streaks)</span></div>
+<div class="sprint-box"><strong>Sprint 4 (Week 5–6):</strong> <span>3.1–3.3, 3.5, 3.7 — Viral/social features (share, challenge, skins)</span></div>
+<div class="sprint-box"><strong>Sprint 5 (Week 7–8):</strong> <span>2.3–2.6, 4.1–4.3 — Progression system + visual polish</span></div>
+<div class="sprint-box"><strong>Sprint 6 (Week 9–10):</strong> <span>4.4–4.7, 5.5–5.7 — Advanced gameplay + performance tuning</span></div>
+<div class="sprint-box"><strong>Sprint 7+ (Month 3+):</strong> <span>6.x, 7.x — Multiplayer + monetization</span></div>
+
+<div class="insight" style="margin-top: 20px;">
+  <strong>Priority #1:</strong> Migrate to Canvas 2D rendering (1.8 / 5.1). The current DOM-based approach creates/destroys up to 200 div elements — this will bottleneck everything else. After that, add <em>juice</em> (screen shake, particles, sound effects). These two changes alone will transform how the game feels.<br><br>
+  <strong>Priority #2:</strong> Instant restart (2.1) + one-click share (3.1). These are the two highest-ROI features for retention and virality. Every extra second between death and the next round loses players. Every share is free marketing.
+</div>
+
+<!-- SOURCES -->
+<h2>Research Sources</h2>
+<p style="font-size: 10px; color: #666; line-height: 1.8;">
+  Crescendo AI — Latest AI News &amp; Breakthroughs &bull;
+  FRVR — Best Browser Games 2026 &bull;
+  PC Gamer — Best Browser Games &bull;
+  The Gamer — Best Browser Survival Games &bull;
+  ScienceDirect — What Makes Good Games Go Viral &bull;
+  Root-Nation — Slither.io and Agar.io Behind the Scene &bull;
+  GamesBeat — The Surprising Momentum Behind .io Games &bull;
+  Wikipedia — Compulsion Loop &bull;
+  Gamedeveloper — Compulsion Loops and Dopamine &bull;
+  MoldStud — Designing Addictive Gameplay &bull;
+  Genieee — How to Monetize HTML5 Games 2025 &bull;
+  Xsolla — Ways to Maximize Web Game Revenue &bull;
+  GameAnalytics — Exploring Game Monetization &bull;
+  Rune.ai — Web Game Performance Optimization &bull;
+  Blood Moon Interactive — Juice in Game Design &bull;
+  GDevelop — Leaderboard System
+</p>
+
+<div class="footer">
+  Survival to 21s — Optimization Plan v1.0 &bull; Prepared by Claude Code (Opus 4.6) for Ken Zhu &bull; March 11, 2026<br>
+  KenPlay.Fun &bull; https://kenplay.fun
+</div>
+
+</body>
+</html>
