@@ -2,6 +2,8 @@
 
 // ===== DOM REFS =====
 const gameArea = document.getElementById('gameArea');
+const gameCanvas = document.getElementById('gameCanvas');
+const gameCtx = gameCanvas.getContext('2d');
 const player = document.getElementById('player');
 const scoreDisplay = document.getElementById('score');
 const highScoreDisplay = document.getElementById('highScore');
@@ -449,14 +451,14 @@ async function loadLeaderboardTab(tab) {
 
 // ===== GAME STATE =====
 let enemies = [];
-let gameInterval;
+let rafId = null;
+let lastRafTime = 0;
 let enemyInterval;
 let helperInterval;
 let gameRunning = false;
 
-// Helper (decoy) — stored as coords so attracted enemies can actually chase it
+// Helper (decoy) — stored as coords so attracted enemies can chase it; drawn on canvas
 let helperPos = null;  // { x, y }
-let helperEl  = null;
 
 // Per-run stats
 let closestCall   = Infinity; // min center-to-center px between player and any enemy
@@ -484,8 +486,7 @@ let playerPos = {
     x: Math.floor(gameArea.clientWidth / 2 - player.clientWidth / 2),
     y: Math.floor(gameArea.clientHeight / 2 - player.clientHeight / 2)
 };
-player.style.left = `${playerPos.x}px`;
-player.style.top = `${playerPos.y}px`;
+player.style.transform = `translate(${playerPos.x}px, ${playerPos.y}px)`;
 
 // Keys
 let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: false };
@@ -538,8 +539,9 @@ function triggerDash() {
 }
 
 // ===== PLAYER =====
-function movePlayer() {
-    const step = isDashing ? 35 : 10;
+
+function movePlayer(dt = 50) {
+    const step = (isDashing ? 35 : 10) * (dt / 50);
     let dx = 0, dy = 0;
 
     if (touchTarget) {
@@ -560,8 +562,7 @@ function movePlayer() {
 
     playerPos.x = Math.max(0, Math.min(gameArea.clientWidth - player.clientWidth, playerPos.x + dx));
     playerPos.y = Math.max(0, Math.min(gameArea.clientHeight - player.clientHeight, playerPos.y + dy));
-    player.style.left = `${playerPos.x}px`;
-    player.style.top = `${playerPos.y}px`;
+    player.style.transform = `translate(${playerPos.x}px, ${playerPos.y}px)`;
     playerPath.push({ x: playerPos.x, y: playerPos.y });
 }
 
@@ -569,11 +570,8 @@ function movePlayer() {
 function createEnemy() {
     if (enemies.length >= MAX_ENEMIES) return;
 
-    const enemy = document.createElement('div');
-    enemy.classList.add('enemy');
-
     const rn = Math.random();
-    enemy.style.backgroundColor = rn < 0.8 ? '#ff0000' : rn < 0.95 ? '#800080' : '#0000ff';
+    const color = rn < 0.8 ? '#ff0000' : rn < 0.95 ? '#800080' : '#0000ff';
 
     const centerX = gameArea.clientWidth / 2;
     const centerY = gameArea.clientHeight / 2;
@@ -583,38 +581,32 @@ function createEnemy() {
 
     const ex = Math.max(0, Math.min(gameArea.clientWidth - 10,  centerX + Math.cos(angle) * dist));
     const ey = Math.max(0, Math.min(gameArea.clientHeight - 10, centerY + Math.sin(angle) * dist));
-    enemy.style.left = `${ex}px`;
-    enemy.style.top  = `${ey}px`;
 
     const sz   = Math.random();
     const size = sz < 0.8 ? 10 : sz < 0.9 ? 20 : 30;
-    enemy.style.width  = `${size}px`;
-    enemy.style.height = `${size}px`;
 
-    gameArea.appendChild(enemy);
-    enemies.push({ element: enemy, x: ex, y: ey, size, xSpeed: (Math.random() - 0.5) * 6, ySpeed: (Math.random() - 0.5) * 6 });
+    enemies.push({ color, x: ex, y: ey, size, xSpeed: (Math.random() - 0.5) * 6, ySpeed: (Math.random() - 0.5) * 6 });
 }
 
 let nearMissTimeout = null;
 const PLAYER_SIZE   = 10;
 
-function updateEnemies() {
+function updateEnemies(dt = 50) {
     if (!gameRunning) return;
-    const px      = playerPos.x;
-    const py      = playerPos.y;
-    const maxDim  = Math.max(gameArea.clientWidth, gameArea.clientHeight);
+    const px       = playerPos.x;
+    const py       = playerPos.y;
+    const maxDim   = Math.max(gameArea.clientWidth, gameArea.clientHeight);
     const fastCount = Math.min(Math.floor(elapsedSeconds / 5), enemies.length);
-    let nearMiss  = false;
+    const dtScale  = dt / 50;
+    let nearMiss   = false;
 
     enemies = enemies.filter((enemyObj, index) => {
-        // Distance from player using stored positions — no DOM layout reads
         const cdx = px - enemyObj.x;
         const cdy = py - enemyObj.y;
         const cd2 = cdx * cdx + cdy * cdy;
 
         // Cull if drifted too far
         if (cd2 > (maxDim / 2) * (maxDim / 2)) {
-            gameArea.removeChild(enemyObj.element);
             enemiesDodged++;
             return false;
         }
@@ -636,8 +628,8 @@ function updateEnemies() {
         const dirY  = tdy / tdist;
         const spd   = index < fastCount ? 5 : 1;
 
-        enemyObj.x += (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * spd;
-        enemyObj.y += (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * spd;
+        enemyObj.x += (dirX * 2 + enemyObj.xSpeed) * (Math.random() * 0.5 + 0.75) * spd * dtScale;
+        enemyObj.y += (dirY * 2 + enemyObj.ySpeed) * (Math.random() * 0.5 + 0.75) * spd * dtScale;
 
         // Bounce off walls
         if (enemyObj.x <= 0 || enemyObj.x >= gameArea.clientWidth - enemyObj.size) {
@@ -648,9 +640,6 @@ function updateEnemies() {
             enemyObj.ySpeed = -enemyObj.ySpeed;
             enemyObj.y = Math.max(0, Math.min(gameArea.clientHeight - enemyObj.size, enemyObj.y));
         }
-
-        enemyObj.element.style.left = `${enemyObj.x}px`;
-        enemyObj.element.style.top  = `${enemyObj.y}px`;
 
         // AABB collision (skip if dashing — dash is invincible)
         if (!isDashing && !(px + PLAYER_SIZE < enemyObj.x || px > enemyObj.x + enemyObj.size ||
@@ -671,29 +660,15 @@ function updateEnemies() {
 
 // ===== HELPER DECOY =====
 function createHelper() {
-    // Remove any still-active helper
-    if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
-
-    const hx = Math.random() * (gameArea.clientWidth  - 20);
-    const hy = Math.random() * (gameArea.clientHeight - 20);
-    helperPos = { x: hx, y: hy };
-
-    helperEl = document.createElement('div');
-    helperEl.classList.add('helper');
-    Object.assign(helperEl.style, {
-        position: 'absolute', width: '20px', height: '20px',
-        backgroundColor: '#e0e0e0', borderRadius: '50%',
-        boxShadow: '0 0 8px #fff',
-        left: `${hx}px`, top: `${hy}px`
-    });
-    gameArea.appendChild(helperEl);
+    helperPos = {
+        x: Math.random() * (gameArea.clientWidth  - 20),
+        y: Math.random() * (gameArea.clientHeight - 20)
+    };
 
     const attracted = enemies.filter(() => Math.random() < 0.3);
     attracted.forEach(e => { e.attractedToHelper = true; });
 
     setTimeout(() => {
-        if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
-        helperEl  = null;
         helperPos = null;
         attracted.forEach(e => { e.attractedToHelper = false; });
     }, 3000);
@@ -713,6 +688,7 @@ function showMilestone(text) {
 function drawPlayerPath() {
     if (playerPath.length < 2) return;
     const canvas = document.createElement('canvas');
+    canvas.className = 'path-canvas';
     canvas.width = gameArea.clientWidth;
     canvas.height = gameArea.clientHeight;
     Object.assign(canvas.style, { position: 'absolute', top: '0', left: '0', zIndex: '999', pointerEvents: 'none' });
@@ -815,12 +791,61 @@ function drawPathInPanel(containerEl) {
     containerEl.appendChild(canvas);
 }
 
+// ===== CANVAS RENDER =====
+function drawFrame() {
+    gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
+
+    // Helper decoy
+    if (helperPos) {
+        gameCtx.save();
+        gameCtx.shadowColor = '#fff';
+        gameCtx.shadowBlur  = 8;
+        gameCtx.fillStyle   = '#e0e0e0';
+        gameCtx.beginPath();
+        gameCtx.arc(helperPos.x + 10, helperPos.y + 10, 10, 0, Math.PI * 2);
+        gameCtx.fill();
+        gameCtx.restore();
+    }
+
+    // Enemies
+    for (const e of enemies) {
+        gameCtx.save();
+        gameCtx.fillStyle = e.color;
+        gameCtx.beginPath();
+        gameCtx.arc(e.x + e.size / 2, e.y + e.size / 2, e.size / 2, 0, Math.PI * 2);
+        gameCtx.fill();
+        gameCtx.restore();
+    }
+}
+
+// ===== RAF GAME LOOP =====
+function gameLoop(timestamp) {
+    if (!gameRunning) return;
+    const dt = lastRafTime ? Math.min(timestamp - lastRafTime, 100) : 50;
+    lastRafTime = timestamp;
+
+    currentElapsedMs = Date.now() - gameStartTime;
+    elapsedSeconds   = Math.floor(currentElapsedMs / 1000);
+    const cs = Math.floor((currentElapsedMs % 1000) / 10);
+    scoreDisplay.textContent = `Progress: ${elapsedSeconds}.${String(cs).padStart(2, '0')}s`;
+
+    if (elapsedSeconds >= 10 && !milestoneShown.has(10)) { milestoneShown.add(10); showMilestone('SPEED UP!'); }
+    if (elapsedSeconds >= 20 && !milestoneShown.has(20)) { milestoneShown.add(20); showMilestone('FASTER!'); }
+    if (elapsedSeconds >= 30 && !milestoneShown.has(30)) { milestoneShown.add(30); showMilestone('MAXIMUM SPEED!'); }
+
+    movePlayer(dt);
+    updateEnemies(dt);
+    drawFrame();
+
+    rafId = requestAnimationFrame(gameLoop);
+}
+
 // ===== END GAME =====
 function endGame() {
     if (!gameRunning) return;
     gameRunning = false;
 
-    clearInterval(gameInterval);
+    cancelAnimationFrame(rafId);
     clearInterval(enemyInterval);
     clearInterval(helperInterval);
     clearTimeout(milestoneTimer);
@@ -918,11 +943,10 @@ function endGame() {
     drawPlayerPath();
     drawPathInPanel(document.getElementById('goPathCanvas'));
 
-    // Cleanup enemies + helpers
-    enemies.forEach(e => { if (e.element.parentNode === gameArea) gameArea.removeChild(e.element); });
+    // Cleanup
     enemies = [];
-    if (helperEl && helperEl.parentNode === gameArea) gameArea.removeChild(helperEl);
-    helperEl = null; helperPos = null;
+    helperPos = null;
+    gameCtx.clearRect(0, 0, gameCanvas.width, gameCanvas.height);
 
     // Animated time counter (counts up from 0 to final time over 1.3s)
     const timeEl     = document.getElementById('goTimeCounter');
@@ -977,16 +1001,19 @@ function endGame() {
 
 // ===== START GAME =====
 function startGame() {
-    const existingCanvas = gameArea.querySelector('canvas');
-    if (existingCanvas) gameArea.removeChild(existingCanvas);
+    // Remove path-trace canvas from previous game-over (not the game canvas)
+    const pathCanvas = gameArea.querySelector('canvas.path-canvas');
+    if (pathCanvas) gameArea.removeChild(pathCanvas);
+
+    // Size game canvas to match arena
+    gameCanvas.width  = gameArea.clientWidth;
+    gameCanvas.height = gameArea.clientHeight;
 
     playerPos = {
         x: gameArea.clientWidth / 2 - player.clientWidth / 2,
         y: gameArea.clientHeight / 2 - player.clientHeight / 2
     };
-    player.style.left = `${playerPos.x}px`;
-    player.style.top = `${playerPos.y}px`;
-    player.style.transform = '';
+    player.style.transform = `translate(${playerPos.x}px, ${playerPos.y}px)`;
     player.className = 'player';
 
     playerPath = [{ x: playerPos.x, y: playerPos.y }];
@@ -999,7 +1026,6 @@ function startGame() {
     enemiesDodged    = 0;
     milestoneShown   = new Set();
     helperPos        = null;
-    helperEl         = null;
     dashIndicator.style.transition = 'none';
     dashIndicator.style.width = '100%';
     gameRunning = true;
@@ -1008,20 +1034,8 @@ function startGame() {
     for (let i = 0; i < (isMobile ? 10 : 40); i++) createEnemy();
 
     gameStartTime = Date.now();
-    gameInterval = setInterval(() => {
-        currentElapsedMs = Date.now() - gameStartTime;
-        elapsedSeconds = Math.floor(currentElapsedMs / 1000);
-        const cs = Math.floor((currentElapsedMs % 1000) / 10);
-        scoreDisplay.textContent = `Progress: ${elapsedSeconds}.${String(cs).padStart(2, '0')}s`;
-
-        // Milestone speed-up alerts
-        if (elapsedSeconds >= 10 && !milestoneShown.has(10)) { milestoneShown.add(10); showMilestone('SPEED UP!'); }
-        if (elapsedSeconds >= 20 && !milestoneShown.has(20)) { milestoneShown.add(20); showMilestone('FASTER!'); }
-        if (elapsedSeconds >= 30 && !milestoneShown.has(30)) { milestoneShown.add(30); showMilestone('MAXIMUM SPEED!'); }
-
-        movePlayer();
-        updateEnemies();
-    }, 50);
+    lastRafTime   = 0;
+    rafId = requestAnimationFrame(gameLoop);
 
     enemyInterval = setInterval(createEnemy, 100);
     helperInterval = setInterval(createHelper, 5000);
