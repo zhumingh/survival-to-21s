@@ -30,6 +30,8 @@ db.exec(`
 try { db.exec(`ALTER TABLE users ADD COLUMN country TEXT NOT NULL DEFAULT ''`); } catch (_) {}
 // Safe migration: add email column
 try { db.exec(`ALTER TABLE users ADD COLUMN email TEXT NOT NULL DEFAULT ''`); } catch (_) {}
+// Safe migration: add google_id column for OAuth users
+try { db.exec(`ALTER TABLE users ADD COLUMN google_id TEXT`); } catch (_) {}
 
 app.use(express.json());
 app.use(session({
@@ -148,6 +150,83 @@ app.get('/api/scores/me', requireAuth, (req, res) => {
     ORDER BY score_ms DESC LIMIT 10
   `).all(req.session.userId);
   res.json(rows);
+});
+
+// Google OAuth — requires GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET env vars
+const GOOGLE_CLIENT_ID     = process.env.GOOGLE_CLIENT_ID;
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
+const BASE_URL             = process.env.BASE_URL || 'http://localhost:3000';
+const GOOGLE_CALLBACK      = `${BASE_URL}/api/auth/google/callback`;
+
+app.get('/api/auth/google', (req, res) => {
+  if (!GOOGLE_CLIENT_ID) return res.redirect('/?googleError=not_configured');
+  const params = new URLSearchParams({
+    client_id:     GOOGLE_CLIENT_ID,
+    redirect_uri:  GOOGLE_CALLBACK,
+    response_type: 'code',
+    scope:         'openid email profile',
+    access_type:   'online',
+  });
+  res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params}`);
+});
+
+app.get('/api/auth/google/callback', async (req, res) => {
+  const { code } = req.query;
+  if (!code || !GOOGLE_CLIENT_ID) return res.redirect('/?googleError=1');
+
+  try {
+    // Exchange code for access token
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id:     GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        redirect_uri:  GOOGLE_CALLBACK,
+        grant_type:    'authorization_code',
+      }),
+    });
+    const tokenData = await tokenRes.json();
+    if (!tokenData.access_token) return res.redirect('/?googleError=1');
+
+    // Fetch Google profile
+    const profileRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    });
+    const profile = await profileRes.json();
+    if (!profile.id) return res.redirect('/?googleError=1');
+
+    // Find existing user by google_id
+    let user = db.prepare('SELECT * FROM users WHERE google_id = ?').get(profile.id);
+
+    if (!user) {
+      // Derive a valid username from display name
+      let base = (profile.name || profile.email?.split('@')[0] || 'player')
+        .replace(/[^a-zA-Z0-9_]/g, '')
+        .slice(0, 20);
+      if (base.length < 2) base = 'player';
+
+      let username = base;
+      let suffix = 1;
+      while (db.prepare('SELECT id FROM users WHERE username = ?').get(username)) {
+        username = base.slice(0, 18) + suffix++;
+      }
+
+      const result = db.prepare(
+        'INSERT INTO users (username, password_hash, email, google_id) VALUES (?, ?, ?, ?)'
+      ).run(username, '', profile.email || '', profile.id);
+      user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
+    }
+
+    req.session.userId   = user.id;
+    req.session.username = user.username;
+    req.session.country  = user.country || '';
+    res.redirect('/');
+  } catch (err) {
+    console.error('Google OAuth error:', err);
+    res.redirect('/?googleError=1');
+  }
 });
 
 const PORT = process.env.PORT || 3000;

@@ -76,6 +76,15 @@ async function checkAuth() {
 function showAuthScreen() {
     document.getElementById('authScreen').style.display = 'flex';
     document.getElementById('gameInstructions').style.display = 'none';
+    // Show error if redirected back from a failed Google OAuth attempt
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('googleError')) {
+        const msg = params.get('googleError') === 'not_configured'
+            ? 'Google login is not configured on this server.'
+            : 'Google sign-in failed. Please try again.';
+        document.getElementById('authError').textContent = msg;
+        history.replaceState(null, '', '/');
+    }
 }
 
 let storyShown = false;
