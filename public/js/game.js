@@ -485,6 +485,14 @@ let dashCooldown = false;
 const DASH_DURATION = 180;
 const DASH_COOLDOWN = 2000;
 
+// Freeze pulse (A+S+D+F simultaneously)
+const FREEZE_RADIUS   = 120;  // px from player center
+const FREEZE_DURATION = 2500; // ms enemies stay frozen
+const FREEZE_COOLDOWN = 4000; // ms between pulses
+let freezeCooldown = false;
+let freezeIndicatorTimer = null;
+const freezeKeys = new Set();
+
 // High score (local)
 let highScore = parseInt(localStorage.getItem('dodge_highscore') || '0');
 highScoreDisplay.textContent = `Best: ${highScore}s`;
@@ -503,9 +511,14 @@ let keys = { ArrowUp: false, ArrowDown: false, ArrowLeft: false, ArrowRight: fal
 document.addEventListener('keydown', (event) => {
     if (event.key in keys) keys[event.key] = true;
     if (event.key === ' ') triggerDash();
+    if (['a','s','d','f'].includes(event.key.toLowerCase())) {
+        freezeKeys.add(event.key.toLowerCase());
+        if (gameRunning && freezeKeys.size === 4) triggerFreeze();
+    }
 });
 document.addEventListener('keyup', (event) => {
     if (event.key in keys) keys[event.key] = false;
+    freezeKeys.delete(event.key.toLowerCase());
 });
 
 // Touch: follow-finger (mobile moves toward wherever finger is)
@@ -545,6 +558,53 @@ function triggerDash() {
     }));
 
     setTimeout(() => { dashCooldown = false; }, DASH_COOLDOWN);
+}
+
+// ===== FREEZE PULSE =====
+function triggerFreeze() {
+    if (freezeCooldown) return;
+
+    const pcx = playerPos.x + PLAYER_SIZE / 2;
+    const pcy = playerPos.y + PLAYER_SIZE / 2;
+    const now = Date.now();
+    let froze = 0;
+
+    for (const e of enemies) {
+        const ecx = e.x + e.size / 2;
+        const ecy = e.y + e.size / 2;
+        const dx  = ecx - pcx;
+        const dy  = ecy - pcy;
+        if (dx * dx + dy * dy <= FREEZE_RADIUS * FREEZE_RADIUS) {
+            e.frozenUntil = now + FREEZE_DURATION;
+            froze++;
+        }
+    }
+
+    if (froze === 0) return; // no nearby enemies — don't burn the cooldown
+
+    freezeCooldown = true;
+    showMilestone('FROZEN!');
+
+    // Visual ring pulse on canvas
+    const pcxR = pcx, pcyR = pcy;
+    let pulseStart = null;
+    function animatePulse(ts) {
+        if (!pulseStart) pulseStart = ts;
+        const p = Math.min((ts - pulseStart) / 300, 1);
+        const r = FREEZE_RADIUS * p;
+        gameCtx.save();
+        gameCtx.globalAlpha = (1 - p) * 0.5;
+        gameCtx.strokeStyle = '#00cfff';
+        gameCtx.lineWidth = 3;
+        gameCtx.beginPath();
+        gameCtx.arc(pcxR, pcyR, r, 0, Math.PI * 2);
+        gameCtx.stroke();
+        gameCtx.restore();
+        if (p < 1) requestAnimationFrame(animatePulse);
+    }
+    requestAnimationFrame(animatePulse);
+
+    setTimeout(() => { freezeCooldown = false; }, FREEZE_COOLDOWN);
 }
 
 // ===== PLAYER =====
@@ -628,6 +688,11 @@ function updateEnemies(dt = 50) {
         if (enemyObj.attractedToHelper && helperPos) {
             targetX = helperPos.x;
             targetY = helperPos.y;
+        }
+
+        // Skip movement while frozen
+        if (enemyObj.frozenUntil && Date.now() < enemyObj.frozenUntil) {
+            return true;
         }
 
         const tdx   = targetX - enemyObj.x;
@@ -817,9 +882,17 @@ function drawFrame() {
     }
 
     // Enemies
+    const now = Date.now();
     for (const e of enemies) {
+        const frozen = e.frozenUntil && now < e.frozenUntil;
         gameCtx.save();
-        gameCtx.fillStyle = e.color;
+        if (frozen) {
+            gameCtx.shadowColor = '#00cfff';
+            gameCtx.shadowBlur  = 10;
+            gameCtx.fillStyle   = '#a8e8ff';
+        } else {
+            gameCtx.fillStyle = e.color;
+        }
         gameCtx.beginPath();
         gameCtx.arc(e.x + e.size / 2, e.y + e.size / 2, e.size / 2, 0, Math.PI * 2);
         gameCtx.fill();
@@ -1031,6 +1104,8 @@ function startGame() {
     currentElapsedMs = 0;
     isDashing        = false;
     dashCooldown     = false;
+    freezeCooldown   = false;
+    freezeKeys.clear();
     closestCall      = Infinity;
     enemiesDodged    = 0;
     milestoneShown   = new Set();
